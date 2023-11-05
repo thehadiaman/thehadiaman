@@ -23,8 +23,8 @@ I like to think I'm pretty good at some things. Here are a few of my superpowers
 
 I'm constantly working on exciting projects, like:
 
-- 🤖 Building a robot to fetch my snacks.
-- 📚 A revolutionary library of code snippets called "Copy-Paste-Paradise."
+- 🤖 Building a robot to fetch my snacks, naa I am kidding.
+- 📚 I am creating a SSO for my future projects, possibly for my company.
 
 ## Fun Facts
 
