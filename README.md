@@ -1,4 +1,4 @@
-# Hello there, I'm HADI AMAN
+# Hello there, I'm HADI AMAN                                                                                                              🛸
 
 ![Dancing Octocat](https://media.giphy.com/media/KzJkzjggfGN5Py6nkT/giphy.gif)
 
@@ -15,16 +15,17 @@ I'm just your friendly neighborhood coder, trying to make the world a better pla
 
 I like to think I'm pretty good at some things. Here are a few of my superpowers:
 
+- 💡 I can learn anything.
 - 💾 Storing knowledge in my head... until I need it.
 - 🚀 Debugging the un-debuggable.
-- 🌟 Creating code that's so efficient, it makes Einstein jealous.
+- 🌟 Creating code that's so efficient.
 
 ## Current Projects
 
 I'm constantly working on exciting projects, like:
 
 - 🤖 Building a robot to fetch my snacks, naa I am kidding.
-- 📚 I am creating a SSO for my future projects, possibly for my company.
+- 📚 I am creating a SSO for my future projects, possibly for **my company**.
 
 ## Fun Facts
 
@@ -42,3 +43,9 @@ You can connect with me on various platforms:
 - 💼 [Git](https://github.com/thehadiaman?tab=repositories)
 
 Feel free to explore my repositories and don't hesitate to reach out if you have any questions or just want to chat. Happy coding, and may your bugs be as rare as a unicorn!.
+
+
+
+# 
+# (-_•)╦̵̵̿╤─𐐘      𐐘     𐐘     𐐘      𐐘     𐐘      𐐘       𐐘  𐐘💥╾━╤デ╦︻ඞා
+
