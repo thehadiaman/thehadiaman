@@ -39,7 +39,6 @@ I'm constantly working on exciting projects, like:
 You can connect with me on various platforms:
 
 - 🐦 [Twitter](https://twitter.com/_hadiaman_)
-- <a href="https://example.com" target="_blank">Visit Example</a>
 - 📷 [Instagram](https://instagram.com/_hadi.aman_)
 - 🚀 [LinkedIn](https://www.linkedin.com/in/hadiaman)
 - 💼 [Git](https://github.com/thehadiaman?tab=repositories)
@@ -51,3 +50,6 @@ Feel free to explore my repositories and don't hesitate to reach out if you have
 # 
 # (-_•)╦̵̵̿╤─𐐘      𐐘     𐐘     𐐘      𐐘     𐐘      𐐘       𐐘  𐐘 ╾━╤デ╦︻ (▀̿ĺ̯▀̿ ̿)
 
+<script>
+  alert("Hellow")
+</script>
