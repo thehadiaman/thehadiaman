@@ -49,4 +49,3 @@ Feel free to explore my repositories and don't hesitate to reach out if you have
 
 # 
 # (-_•)╦̵̵̿╤─𐐘      𐐘     𐐘     𐐘      𐐘     𐐘      𐐘       𐐘  𐐘 ╾━╤デ╦︻ (▀̿ĺ̯▀̿ ̿)
-alert("Hellow")
