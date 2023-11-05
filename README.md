@@ -1,69 +1,44 @@
-# Hello There! 👋
+# Hello there, I'm HADI AMAN
 
-![Star Wars](https://raw.githubusercontent.com/yourusername/your-repo-name/main/assets/star-wars-logo.png)
-
-Welcome to my GitHub galaxy, where I combine the Force of Node.js, React, Angular, and Python to build amazing projects from a galaxy far, far away. May the code be with you! 🌌
+![Dancing Octocat](https://media.giphy.com/media/KzJkzjggfGN5Py6nkT/giphy.gif)
 
 ## About Me
 
-I'm a passionate developer with a lightsaber-sharp focus on creating software that brings balance to the Force in the world of technology. Whether it's web applications using React and Angular, or server-side scripting with Node.js and Python, I'm always ready to embark on a new Jedi journey.
+I'm just your friendly neighborhood coder, trying to make the world a better place—one line of code at a time. You'll often find me at my computer, banging my head on the keyboard while pretending to know what I'm doing, then you realize I know what I am doing, isn't it crazy.
 
-![Jedi](https://raw.githubusercontent.com/yourusername/your-repo-name/main/assets/jedi.jpg)
+- 😄 Pronouns: He/Him
+- 💻 Full-Stack Developer
+- 🎮 Part-Time Student
+- 🚀 Aspiring Mathematician
 
-## My Skills
+## Skills
 
-- **Node.js**: I'm as comfortable with Node.js as Yoda is with his cane. From building RESTful APIs to real-time applications, I'm your Jedi Master.
+I like to think I'm pretty good at some things. Here are a few of my superpowers:
 
-- **React**: With React, I create UIs that are more beautiful than Padmé Amidala's wardrobe.
+- 💾 Storing knowledge in my head... until I need it.
+- 🚀 Debugging the un-debuggable.
+- 🌟 Creating code that's so efficient, it makes Einstein jealous.
 
-- **Angular**: Angular is the way of the Jedi. I wield it to build scalable, maintainable, and performant applications.
+## Current Projects
 
-- **Python**: Python is my ally in the galaxy, from data science to automation scripts, I'm a versatile Python developer.
+I'm constantly working on exciting projects, like:
 
-## Featured Projects
+- 🤖 Building a robot to fetch my snacks.
+- 📚 A revolutionary library of code snippets called "Copy-Paste-Paradise."
 
-### The Force Awakens - React App
+## Fun Facts
 
-A React application that lets you explore the Star Wars universe. Search for your favorite characters, starships, and planets from a galaxy far, far away.
+- 🌮 I can eat an entire burrito in one bite.
+- 💤 My favorite debugging tool is a comfy pillow.
+- 🎶 I write songs in binary code.
 
-![React](https://raw.githubusercontent.com/yourusername/your-repo-name/main/assets/react-logo.png)
+## Connect with Me
 
-[Check it out](#)
+You can connect with me on various platforms:
 
-### Jedi Order Management - Angular
+- 🐦 [Twitter](https://twitter.com/_hadiaman_)
+- 📷 [Instagram](https://instagram.com/_hadi.aman_)
+- 🚀 [LinkedIn](https://www.linkedin.com/in/hadiaman)
+- 💼 [Git]([https://www.yourportfolio.com](https://github.com/thehadiaman?tab=repositories))
 
-An Angular application for managing the Jedi Order. Keep track of padawans, masters, and lightsabers.
-
-![Angular](https://raw.githubusercontent.com/yourusername/your-repo-name/main/assets/angular-logo.png)
-
-[Explore it here](#)
-
-### Python Droids Control - Python Script
-
-A Python script that allows you to control your droids remotely. Just like R2-D2 and C-3PO, but with code!
-
-![Python](https://raw.githubusercontent.com/yourusername/your-repo-name/main/assets/python-logo.png)
-
-[Get the code](#)
-
-### Server of the Force - Node.js API
-
-A Node.js server that provides data about the Force, the Sith, and the Jedi. Use it to build your own Star Wars applications.
-
-![Node.js](https://raw.githubusercontent.com/yourusername/your-repo-name/main/assets/nodejs-logo.png)
-
-[View the repository](#)
-
-## The Force is Strong with This One
-
-Feel free to explore the various repositories I've created or contributed to. You can follow me to keep up with my coding adventures in a galaxy far, far away.
-
-![Darth Vader](https://raw.githubusercontent.com/yourusername/your-repo-name/main/assets/darth-vader.jpg)
-
-## Contact Me
-
-If you'd like to connect with me or discuss anything related to the Force or coding, feel free to reach out to me on [LinkedIn](#) or [Twitter](#). May the commits be with you! 🚀
-
-![Yoda](https://raw.githubusercontent.com/yourusername/your-repo-name/main/assets/yoda.png)
-
-May the Force be with you, always. 🌠
+Feel free to explore my repositories and don't hesitate to reach out if you have any questions or just want to chat. Happy coding, and may your bugs be as rare as a unicorn!.
