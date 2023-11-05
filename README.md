@@ -1,6 +1,6 @@
 # Hello There! 👋
 
-![Star Wars](https://raw.githubusercontent.com/yourusername/your-repo-name/main/assets/star-wars-logo.jpg)
+![Star Wars](https://raw.githubusercontent.com/yourusername/your-repo-name/main/assets/star-wars-logo.png)
 
 Welcome to my GitHub galaxy, where I combine the Force of Node.js, React, Angular, and Python to build amazing projects from a galaxy far, far away. May the code be with you! 🌌
 
@@ -26,7 +26,7 @@ I'm a passionate developer with a lightsaber-sharp focus on creating software th
 
 A React application that lets you explore the Star Wars universe. Search for your favorite characters, starships, and planets from a galaxy far, far away.
 
-![React](https://raw.githubusercontent.com/yourusername/your-repo-name/main/assets/react-logo.jpg)
+![React](https://raw.githubusercontent.com/yourusername/your-repo-name/main/assets/react-logo.png)
 
 [Check it out](#)
 
@@ -34,7 +34,7 @@ A React application that lets you explore the Star Wars universe. Search for you
 
 An Angular application for managing the Jedi Order. Keep track of padawans, masters, and lightsabers.
 
-![Angular](https://raw.githubusercontent.com/yourusername/your-repo-name/main/assets/angular-logo.jpg)
+![Angular](https://raw.githubusercontent.com/yourusername/your-repo-name/main/assets/angular-logo.png)
 
 [Explore it here](#)
 
@@ -42,7 +42,7 @@ An Angular application for managing the Jedi Order. Keep track of padawans, mast
 
 A Python script that allows you to control your droids remotely. Just like R2-D2 and C-3PO, but with code!
 
-![Python](https://raw.githubusercontent.com/yourusername/your-repo-name/main/assets/python-logo.jpg)
+![Python](https://raw.githubusercontent.com/yourusername/your-repo-name/main/assets/python-logo.png)
 
 [Get the code](#)
 
@@ -50,7 +50,7 @@ A Python script that allows you to control your droids remotely. Just like R2-D2
 
 A Node.js server that provides data about the Force, the Sith, and the Jedi. Use it to build your own Star Wars applications.
 
-![Node.js](https://raw.githubusercontent.com/yourusername/your-repo-name/main/assets/nodejs-logo.jpg)
+![Node.js](https://raw.githubusercontent.com/yourusername/your-repo-name/main/assets/nodejs-logo.png)
 
 [View the repository](#)
 
@@ -64,6 +64,6 @@ Feel free to explore the various repositories I've created or contributed to. Yo
 
 If you'd like to connect with me or discuss anything related to the Force or coding, feel free to reach out to me on [LinkedIn](#) or [Twitter](#). May the commits be with you! 🚀
 
-![Yoda](https://raw.githubusercontent.com/yourusername/your-repo-name/main/assets/yoda.jpg)
+![Yoda](https://raw.githubusercontent.com/yourusername/your-repo-name/main/assets/yoda.png)
 
 May the Force be with you, always. 🌠
