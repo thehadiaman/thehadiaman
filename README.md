@@ -1,4 +1,5 @@
 # Hello there, I'm HADI AMAN                                                                                                              🛸
+01001000 01000101 01001100 01001100 01001111 00101100 00100000 01010111 01001111 01010010 01001100 01000100 00100001
 
 ![Dancing Octocat](https://media.giphy.com/media/KzJkzjggfGN5Py6nkT/giphy.gif)
 
@@ -29,8 +30,8 @@ I'm constantly working on exciting projects, like:
 
 ## Fun Facts
 
-- 🌮 I can eat an entire burrito in one bite.
-- 💤 My favorite debugging tool is a comfy pillow.
+- 🌮 I can code until my sleep conquers me.
+- 💤 My favorite debugging tool is a 🔎.
 - 🎶 I write songs in binary code.
 
 ## Connect with Me
