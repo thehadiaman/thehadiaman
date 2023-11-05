@@ -40,7 +40,7 @@ const spell = (name) => {
   console.log(`You are ${name}, a mighty sorcerer! 🪄✨`);
 };
 
-spell("Merlin the Developer");
+spell("Hadi the Developer");
 ```
 
 ### 🎩 Magic is Real
