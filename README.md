@@ -30,8 +30,8 @@ I'm constantly working on exciting projects, like:
 
 ## Fun Facts
 
-- 🌮 I can code until my sleep conquers me.
-- 💤 My favorite debugging tool is a 🔎.
+- 📟 I can code until my sleep conquers me.
+- 💤 My favorite debugging tool is a sleep.
 - 🎶 I write songs in binary code.
 
 ## Connect with Me
