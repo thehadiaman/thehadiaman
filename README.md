@@ -39,6 +39,6 @@ You can connect with me on various platforms:
 - 🐦 [Twitter](https://twitter.com/_hadiaman_)
 - 📷 [Instagram](https://instagram.com/_hadi.aman_)
 - 🚀 [LinkedIn](https://www.linkedin.com/in/hadiaman)
-- 💼 [Git]([https://www.yourportfolio.com](https://github.com/thehadiaman?tab=repositories))
+- 💼 [Git](https://github.com/thehadiaman?tab=repositories)
 
 Feel free to explore my repositories and don't hesitate to reach out if you have any questions or just want to chat. Happy coding, and may your bugs be as rare as a unicorn!.
