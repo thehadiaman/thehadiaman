@@ -10,7 +10,7 @@ Greetings, wanderer of the digital realm! I am the conjurer of code, the weaver 
 
 ![Wizard](https://www.halfbakedhex.com/wp-content/uploads/2020/10/wizard.png)
 
-**Name:** Merlin the Developer 🧙‍♂️
+**Name:** Hadi the Developer 🧙‍♂️
 
 **Location:** The Enchanted Forest 🌲
 
@@ -24,13 +24,13 @@ Greetings, wanderer of the digital realm! I am the conjurer of code, the weaver 
 
 Explore my mystical artifacts and their spellbinding properties:
 
-1. **[Wand of Node.js](https://github.com/MerlinDev/Wand-Of-NodeJS)** - Harness the power of the server-side with this mystical wand. Cast spells to build scalable and performant web applications with Node.js.
+1. **[Wand of Node.js](https://github.com/thehadiaman?tab=repositories)** - Harness the power of the server-side with this mystical wand. Cast spells to build scalable and performant web applications with Node.js.
 
-2. **[The Reactor's Tome](https://github.com/MerlinDev/The-Reactors-Tome)** - Unlock the secrets of the virtual DOM and create responsive web experiences with React.
+2. **[The Reactor's Tome](https://github.com/thehadiaman?tab=repositories)** - Unlock the secrets of the virtual DOM and create responsive web experiences with React.
 
-3. **[Codex of AngularJS](https://github.com/MerlinDev/Codex-Of-AngularJS)** - Dive into the ancient scrolls of AngularJS and discover the power of two-way data binding and modular architecture.
+3. **[Codex of AngularJS](https://github.com/thehadiaman?tab=repositories)** - Dive into the ancient scrolls of AngularJS and discover the power of two-way data binding and modular architecture.
 
-4. **[Python Potions](https://github.com/MerlinDev/Python-Potions)** - Brew magical Python concoctions, from data analysis elixirs to web scraping brews. These potions will leave you spellbound!
+4. **[Python Potions](https://github.com/thehadiaman?tab=repositories)** - Brew magical Python concoctions, from data analysis elixirs to web scraping brews. These potions will leave you spellbound!
 
 ### 🌟 Spells and Incantations
 
@@ -55,7 +55,7 @@ Whether you're a seasoned wizard or a curious apprentice, feel free to join me o
 
 ### 📬 Contact Me
 
-If you have any questions, requests, or if you'd like to collaborate on a magical project, send an owl my way: [merlin.dev@gmail.com](mailto:merlin.dev@gmail.com).
+If you have any questions, requests, or if you'd like to collaborate on a magical project, send an owl my way: [hadiaman2.0@gmail.com](mailto:hadiaman2.0@gmail.com).
 
 May your code be enchanting and your repositories be legendary! 🌌
 
