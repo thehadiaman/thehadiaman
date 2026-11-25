@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#f2e3c6">
+<title>Hadi Aman · Senior Full Stack Developer</title>
+<meta name="description" content="Walk from Kozhikode to Dubai through Hadi Aman's career, in 3D: senior full stack developer (TypeScript, Node.js, Angular, React, AWS) building flight booking and travel ERP software. In Dubai from 5 December 2026.">
+<meta name="author" content="Hadi Aman">
+<meta property="og:type" content="profile">
+<meta property="og:title" content="Hadi Aman · Senior Full Stack Developer">
+<meta property="og:description" content="A walk from Kozhikode to Dubai through my career, in 3D. Flight booking and travel ERP software. In Dubai from 5 December 2026.">
+<meta property="og:url" content="https://thehadiaman.github.io/thehadiaman/">
+<meta property="og:image" content="https://thehadiaman.github.io/thehadiaman/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="assets/fonts/barlow-condensed-600.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="modulepreload" href="assets/vendor/three.min.js">
+<link rel="stylesheet" href="assets/css/world.css">
+<script type="module" src="assets/js/world/main.js"></script>
+</head>
+<body>
+<a class="skip" href="cv.html">Skip the 3D world: read the CV as a page</a>
+<h1 class="sr-only">Hadi Aman, Senior Full Stack Developer</h1>
+<p class="sr-only">An interactive 3D walk from Kozhikode to Dubai through Hadi Aman's career. Each stop opens a card with the details. Everything here is also on the <a href="cv.html">plain CV page</a>.</p>
+
+<canvas class="world" data-world aria-hidden="true"></canvas>
+<div class="labels" data-labels></div>
+<div class="ping" data-ping aria-hidden="true"></div>
+
+<header class="hud">
+  <a class="hud__id" href="cv.html">
+    <strong>Hadi Aman</strong>
+    <span>Senior Full Stack Developer · in Dubai from 5 Dec 2026</span>
+  </a>
+  <nav class="hud__links" aria-label="Contact">
+    <a class="hud__cta" href="mailto:hadiaman.official@gmail.com">Email me</a>
+    <a href="assets/hadi-aman-cv.pdf">CV <span>PDF</span></a>
+    <a href="cv.html">Plain page</a>
+    <button type="button" class="hud__help" data-help aria-expanded="false" aria-controls="help">?<span class="sr-only"> Controls</span></button>
+  </nav>
+</header>
+
+<section class="help" id="help" data-help-panel hidden aria-label="Controls">
+  <h2>Getting around</h2>
+  <dl>
+    <div><dt><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrows</dt><dd>walk</dd></div>
+    <div><dt><kbd>Shift</kbd></dt><dd>run</dd></div>
+    <div><dt>Click or tap the ground</dt><dd>walk there</dd></div>
+    <div><dt>Drag</dt><dd>look around</dd></div>
+    <div><dt>Wheel or pinch</dt><dd>zoom</dd></div>
+    <div><dt><kbd>E</kbd></dt><dd>use (sit, board the plane)</dd></div>
+    <div><dt><kbd>N</kbd></dt><dd>walk to the next stop</dd></div>
+    <div><dt><kbd>Space</kbd></dt><dd>jump</dd></div>
+  </dl>
+  <p>Or just press <strong>Next</strong> on each card and I’ll walk you through it.</p>
+  <p class="help__small">Prefer reading? <a href="cv.html">The same CV as a plain page.</a></p>
+  <p class="help__small">3D models by <a href="https://kenney.nl" target="_blank" rel="noopener">Kenney</a> (CC0). Built with Three.js.</p>
+  <button type="button">Got it</button>
+</section>
+
+<aside class="card" data-card hidden aria-live="polite"></aside>
+<div class="prompt" data-prompt hidden></div>
+
+<nav class="chapters" aria-label="Stops on the route">
+  <ol data-chapters></ol>
+</nav>
+
+<div class="flight" data-flight hidden>
+  <p><strong>CCJ → DXB</strong> Kozhikode to Dubai · 5 December 2026</p>
+  <button type="button">Skip</button>
+</div>
+
+<div class="toast" data-toast role="status"></div>
+<div class="fade" data-fade></div>
+
+<div class="loader" data-loader>
+  <div class="loader__inner">
+    <p class="loader__name">Hadi Aman</p>
+    <p class="loader__role">Senior Full Stack Developer</p>
+    <div class="loader__bar"><span data-progress></span></div>
+    <p class="loader__status" data-loader-status>Loading the route from Kozhikode to Dubai… <span data-progress-text>0%</span></p>
+    <p class="loader__alt"><a href="cv.html">Read the CV as a plain page instead</a></p>
+  </div>
+</div>
+
+<noscript>
+  <div class="noscript">
+    <p>This page is a 3D world and needs JavaScript. The same CV is on the <a href="cv.html">plain page</a>.</p>
+  </div>
+</noscript>
+</body>
+</html>
