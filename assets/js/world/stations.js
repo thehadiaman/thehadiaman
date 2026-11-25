@@ -11,6 +11,9 @@ export const onDubaiSide = (z) => z < -200;
 
 const DEPARTURES = ['DXB  DUBAI  05 DEC', 'SEARCH  14.0S > 1.5S', 'REDIS FARE CACHE 15 MIN', 'BUILDMYTRAVEL.AE'];
 const ARRIVALS = ['CCJ  KOZHIKODE', 'HADI AMAN', 'AVAILABLE FROM 05 DEC'];
+// while the dead walk (the boards only have capitals, digits and . , : - / @ &)
+const DEPARTURES_HAUNTED = ['DXB  DUBAI  05 DEC', 'REASON: ZOMBIES', 'BRAINS: CARRY-ON ONLY', 'DO NOT FEED THE PILOT'];
+const ARRIVALS_HAUNTED = ['CCJ  KOZHIKODE', 'HADI AMAN: STILL ALIVE', 'STILL AVAILABLE 05 DEC'];
 
 // A glowing ball with a fading trail, for the search race.
 class Orb {
@@ -122,12 +125,14 @@ export class Stations {
         break;
       }
       case 'airport':
-        this.startDepartures();
+        if (!this.haunted) this.startDepartures();
         this.after(1.2, () => this.startRace());
         break;
       case 'dubai':
-        this.startArrivals();
-        r.crowd.cheer(8);
+        if (!this.haunted) {
+          this.startArrivals();
+          r.crowd.cheer(8);
+        }
         this.after(0.8, () => this.player.gesture('emote-yes', 1.4));
         break;
       default:
@@ -144,6 +149,23 @@ export class Stations {
     const status = flightStatus();
     board.setStatus(status === 'LANDED' ? 'DEPARTED' : status, at + 1600);
     this.boardsStarted.departures = true;
+  }
+
+  // Zombie mode: the boards have opinions. Off: back to the real schedule.
+  haunt(on) {
+    const at = performance.now();
+    this.haunted = on;
+    if (on) {
+      this.refs.departures.setLines(DEPARTURES_HAUNTED, at);
+      this.refs.departures.setStatus('CANCELLED', at + 1200);
+      this.refs.arrivals.setLines(ARRIVALS_HAUNTED, at);
+      this.refs.arrivals.setStatus('UNDEAD', at + 1200);
+      this.boardsStarted.departures = true;
+      this.boardsStarted.arrivals = true;
+    } else {
+      this.startDepartures(at);
+      this.startArrivals(at);
+    }
   }
 
   startArrivals(at = performance.now()) {

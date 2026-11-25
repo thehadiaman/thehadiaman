@@ -420,6 +420,30 @@ kbd {
 .drive__help { flex-basis: 100%; color: #9d988d; font-size: 0.78rem; text-align: center; }
 .drive__help[hidden] { display: none; }
 .is-driving .prompt { display: none; }
+.nitro {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  touch-action: none;
+  user-select: none;
+}
+.nitro[hidden] { display: none; }
+.nitro__tank {
+  position: relative;
+  width: 54px;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #3b3f46;
+}
+.nitro__tank i {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #4f5dff, #8fe3ff);
+  transform: scaleX(var(--tank, 1));
+  transform-origin: left;
+}
+.nitro.is-on { border-color: #8fe3ff; box-shadow: 0 0 0 2px rgba(110, 160, 255, 0.35); }
 
 /* zombie mode */
 .zombie {

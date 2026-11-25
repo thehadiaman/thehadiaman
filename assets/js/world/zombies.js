@@ -1,7 +1,33 @@
 // Zombie apocalypse: a secret mode (press H five times). Night falls under a red
 // moon and the dead shamble after Hadi. Outrun them (Shift), punch them (F),
 // or drive through them. Three bites and he wakes up back at the last stop.
+import { Vector3 } from '../../vendor/three.min.js';
 import { Actor } from './actors.js';
+
+// What the dead mumble. (They were developers once.)
+const GROANS = [
+  'braaains…', 'need… coffee…', 'merge… conflict…', 'it works… on my… machine…',
+  'one more… meeting…', 'npm… install…', 'who… broke… prod…', 'per my… last… email…',
+  'is it… remote…', 'undefined… is not… a function…', 'standup… in five…',
+  'reply… all…', 'can we… sync… later…', 'it’s… just… a small… change…',
+  'brains… and… benefits…', 'works… in… staging…',
+];
+// …and what they say when they're right behind him
+const CLOSE = [
+  'Hadi… join… our team…', 'send… us… your… CV…', 'can I… get… a referral…',
+  'notice… period…?', 'hire… meee…', 'brains… with… TypeScript…',
+];
+const BONKS = ['BONK!', 'THWACK!', 'POW!', 'OOF!', 'BOINK!', 'WHAM!'];
+const HONKS = ['HONK!', 'BEEP BEEP!', 'VROOM!', 'BOING!'];
+const CAUGHT = [
+  'Bitten three times. You wake up at the stop, craving brains and a stand-up.',
+  'They got you. Good news: zombies can still write TypeScript.',
+  'Bitten. Respawned, like a Lambda cold start.',
+  'Down, not out. Back at the stop, with all your brains.',
+  'Caught. On the bright side, it was a very collaborative team.',
+];
+// the zombie at the old freelance desk, still on the clock
+const DESK = ['deadline… was… yesterday…', 'client… wants… changes…', 'invoice… overdue…', 'one… last… revision…', 'make… the logo… bigger…'];
 
 const MAX_ALIVE = 9;
 const BITE_RANGE = 1.45;
@@ -9,7 +35,11 @@ const PUNCH_RANGE = 2.5;
 const HEARTS = 3;
 
 export class Apocalypse {
-  constructor({ scene, world, nav, player, ui, dayNight }) {
+  constructor({ scene, world, nav, player, ui, dayNight, bubbles, desk }) {
+    this.bubbles = bubbles;
+    this.desk = desk; // { x, z, rot }: where the freelancer sits
+    this.freelancer = null;
+    this.chatter = 2; // seconds until someone groans
     this.scene = scene;
     this.world = world;
     this.nav = nav;
@@ -42,13 +72,30 @@ export class Apocalypse {
     this.time = 0;
     this.dayNight.haunt(true);
     for (let i = 0; i < MAX_ALIVE; i++) this.spawn(this.zombies[i]);
+    // one has taken over the freelance desk, and is still working
+    if (!this.freelancer && this.desk) {
+      const actor = new Actor(model, clips);
+      this.scene.add(actor.root);
+      actor.root.position.set(this.desk.x, 0, this.desk.z);
+      actor.root.rotation.y = this.desk.rot;
+      actor.play('sit');
+      this.freelancer = { actor, arms: { l: actor.bone('arm-left'), r: actor.bone('arm-right') }, next: 0 };
+    }
+    if (this.freelancer) this.freelancer.actor.root.visible = true;
     this.hud();
+  }
+
+  // Comic lines for when they get him.
+  caughtLine() {
+    return CAUGHT[Math.floor(this.rand() * CAUGHT.length)];
   }
 
   stop() {
     this.active = false;
     this.dayNight.haunt(false);
     for (const z of this.zombies) z.actor.root.visible = false;
+    if (this.freelancer) this.freelancer.actor.root.visible = false;
+    this.bubbles.clear();
     this.ui.zombie(null);
   }
 
@@ -106,18 +153,24 @@ export class Apocalypse {
     const fx = Math.sin(this.player.heading);
     const fz = Math.cos(this.player.heading);
     setTimeout(() => {
+      let hit = null;
       for (const z of this.zombies) {
         if (z.state !== 'walk' || z.rising > 0) continue;
         const r = z.actor.root.position;
         const dx = r.x - p.x;
         const dz = r.z - p.z;
         const d = Math.hypot(dx, dz);
-        if (d < PUNCH_RANGE && (dx * fx + dz * fz) / (d || 1) > 0.25) this.knock(z, dx / (d || 1), dz / (d || 1));
+        if (d < PUNCH_RANGE && (dx * fx + dz * fz) / (d || 1) > 0.25) {
+          this.knock(z, dx / (d || 1), dz / (d || 1), hit ? null : BONKS); // one word per punch
+          hit = z;
+        }
       }
     }, 180);
   }
 
-  knock(z, dx, dz) {
+  knock(z, dx, dz, words) {
+    const head = z.actor.root.position;
+    if (words) this.bubbles.pop(_at.set(head.x, head.y + 1.6, head.z), words[Math.floor(this.rand() * words.length)]);
     z.state = 'down';
     z.down = 0;
     z.fly = { x: dx * 6, z: dz * 6 };
@@ -133,6 +186,7 @@ export class Apocalypse {
     this.biteCooldown = Math.max(0, this.biteCooldown - dt);
     const p = this.player.position;
     const onFoot = mode === 'walk';
+    this.mumble(dt, p);
     for (const z of this.zombies) {
       const root = z.actor.root;
       if (!root.visible) continue;
@@ -168,7 +222,7 @@ export class Apocalypse {
       }
       // run over by a car
       if (vehicle && Math.abs(vehicle.v) > 3 && vehicle.hits(root.position.x, root.position.z, 0.45)) {
-        this.knock(z, Math.sin(vehicle.h) * Math.sign(vehicle.v), Math.cos(vehicle.h) * Math.sign(vehicle.v));
+        this.knock(z, Math.sin(vehicle.h) * Math.sign(vehicle.v), Math.cos(vehicle.h) * Math.sign(vehicle.v), HONKS);
         continue;
       }
       if (mode === 'fly' || z.rising > 0.3) {
@@ -199,6 +253,36 @@ export class Apocalypse {
       if (onFoot && d < BITE_RANGE && this.biteCooldown === 0 && !this.player.locked) this.bite(dx, dz, d);
       this.pose(z);
     }
+  }
+
+  // Every few seconds one of the nearer zombies says something; up close, it's
+  // about his CV. The desk zombie keeps muttering about the client.
+  mumble(dt, p) {
+    this.chatter -= dt;
+    const f = this.freelancer;
+    if (f?.actor.root.visible) {
+      f.actor.update(dt);
+      // typing: hands forward, tapping away
+      const tap = Math.sin(this.time * 22) * 0.08;
+      f.arms.l?.rotation.set(0, -1.25 + tap, -0.35);
+      f.arms.r?.rotation.set(0, 1.25 + tap, 0.35);
+      const near = Math.hypot(f.actor.root.position.x - p.x, f.actor.root.position.z - p.z) < 16;
+      if (near && this.time > f.next) {
+        f.next = this.time + 5 + this.rand() * 3;
+        this.bubbles.say(f.actor.root, DESK[Math.floor(this.rand() * DESK.length)], { seconds: 3, above: 2.2 });
+      }
+    }
+    if (this.chatter > 0) return;
+    this.chatter = 2.2 + this.rand() * 2.5;
+    if (this.bubbles.count >= 3) return;
+    const near = this.zombies
+      .filter((z) => z.state === 'walk' && z.rising === 0 && z.actor.root.visible && !this.bubbles.talking(z.actor.root))
+      .map((z) => ({ z, d: Math.hypot(z.actor.root.position.x - p.x, z.actor.root.position.z - p.z) }))
+      .filter((n) => n.d < 22);
+    if (!near.length) return;
+    const { z, d } = near[Math.floor(this.rand() * near.length)];
+    const lines = d < 5 ? CLOSE : GROANS;
+    this.bubbles.say(z.actor.root, lines[Math.floor(this.rand() * lines.length)]);
   }
 
   // One shambling step, bending round whatever is in the way.
@@ -240,7 +324,7 @@ export class Apocalypse {
       this.hearts = HEARTS;
       this.onCaught?.();
       // give him room when he wakes up
-      setTimeout(() => this.zombies.forEach((z) => z.state === 'walk' && this.spawn(z)), 700);
+      setTimeout(() => this.active && this.zombies.forEach((z) => z.state === 'walk' && this.spawn(z)), 700);
     }
     this.hud();
   }
@@ -255,3 +339,5 @@ export class Apocalypse {
     r.rotation.set(0, 1.4 + sway, -0.15);
   }
 }
+
+const _at = new Vector3();

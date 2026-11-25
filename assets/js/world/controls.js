@@ -26,6 +26,7 @@ export class Keys {
         return;
       }
       if (e.code === 'Space') this.held.add('brake');
+      if (e.code === 'KeyN') this.held.add('nitro'); // held for nitro while driving
       const fn = this.handlers.get(e.code);
       if (fn && this.enabled && !e.repeat) {
         e.preventDefault();
@@ -36,6 +37,7 @@ export class Keys {
       if (MOVE[e.code]) this.held.delete(MOVE[e.code]);
       if (e.code.startsWith('Shift')) this.held.delete('run');
       if (e.code === 'Space') this.held.delete('brake');
+      if (e.code === 'KeyN') this.held.delete('nitro');
     });
     window.addEventListener('blur', () => this.held.clear());
   }
@@ -52,6 +54,10 @@ export class Keys {
   get strafe() {
     const k = (this.held.has('right') ? 1 : 0) - (this.held.has('left') ? 1 : 0);
     return k || (Math.abs(this.stick.x) > 0.15 ? this.stick.x : 0);
+  }
+
+  get nitro() {
+    return this.held.has('nitro');
   }
 
   get run() {

@@ -526,7 +526,7 @@ export function buildKerala({ scene, M, world, glyphs, clips }) {
     rows: 4,
     title: 'DEPARTURES',
     icon: 'depart',
-    status: { words: [' ', 'ON TIME', 'BOARDING', 'DEPARTED'], span: 6, row: 0 },
+    status: { words: [' ', 'ON TIME', 'BOARDING', 'DEPARTED', 'CANCELLED'], span: 6, row: 0 },
     scale: 0.28,
   });
   refs.departures.group.position.copy(terminal.boardAnchor);

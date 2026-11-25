@@ -33,7 +33,7 @@ export function buildDubai({ scene, M, world, glyphs }) {
     title: 'ARRIVALS',
     icon: 'arrive',
     clock: true,
-    status: { words: [' ', 'EXPECTED', 'LANDED'], span: 6, row: 0 },
+    status: { words: [' ', 'EXPECTED', 'LANDED', 'UNDEAD'], span: 6, row: 0 },
     scale: 0.28,
   });
   refs.arrivals.group.position.copy(hall.boardAnchor);

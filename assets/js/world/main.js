@@ -22,6 +22,7 @@ import { UI } from './ui.js';
 import { NavGrid } from './nav.js';
 import { DayNight, lineRoads } from './daynight.js';
 import { Apocalypse } from './zombies.js';
+import { Bubbles } from './bubbles.js';
 import { CHAPTERS } from './story.js';
 import { STOPS, VEHICLES, DUBAI_PLACES, RUNWAY_KERALA, RUNWAY_DUBAI } from './layout.js';
 
@@ -258,11 +259,14 @@ async function start() {
 
   /* ------------------------------------------------ the secret: zombies */
   // Press H five times (or click Hadi five times) to start it, and again to end it.
-  const apocalypse = new Apocalypse({ scene, world, nav, player, ui, dayNight });
+  const bubbles = new Bubbles(scene);
+  const apocalypse = new Apocalypse({ scene, world, nav, player, ui, dayNight, bubbles, desk: refs.desk });
   let zombieModel = null;
   async function toggleZombies() {
     if (apocalypse.active) {
       apocalypse.stop();
+      stations.haunt(false);
+      refs.crowd.scare(false);
       ui.toast('The sun comes up. The dead go back to sleep.');
       return;
     }
@@ -274,6 +278,8 @@ async function start() {
     }
     if (player.sitting) player.stand();
     apocalypse.start(zombieModel, clips);
+    stations.haunt(true);
+    refs.crowd.scare(true, bubbles);
     ui.card(null);
     ui.toast(coarse ? 'Zombie apocalypse. Run!' : 'Zombie apocalypse. Run (Shift), punch (F), or find a car.');
   }
@@ -287,7 +293,7 @@ async function start() {
     rig.snap(player.position.clone().add(new Vector3(0, 1.5, 0)));
     player.locked = false;
     await ui.fade(false);
-    ui.toast('Bitten three times. You wake up back at the stop.');
+    ui.toast(apocalypse.caughtLine());
   };
   // five presses (or clicks on him) within three seconds
   const knocks = [];
@@ -349,7 +355,7 @@ async function start() {
     player.root.visible = false;
     refs.playerRadius = 2.2;
     ui.prompt(null);
-    ui.drive({ kind: 'drive', speed: 0 });
+    ui.drive({ kind: 'drive', speed: 0, nitro: car.nitro });
     stick.show(coarse);
   }
 
@@ -358,6 +364,9 @@ async function start() {
     if (!car) return;
     ui.cancelPick?.();
     const out = car.exitSpot();
+    car.boosting = false;
+    car.flameLevel = 0;
+    if (car.flames) car.flames.visible = false;
     if (car.mode === 'manual') car.mode = 'parked';
     if (car.kind === 'taxi') {
       car.path = null;
@@ -516,7 +525,8 @@ async function start() {
         if (bd < 2.6) near.push({ d: bd, label: 'Sit on the bench', act: () => sitOn(bench) });
       }
     }
-    if (stations.active?.id === 'freelance' && !player.sitting) {
+    // (in zombie mode the desk is taken)
+    if (stations.active?.id === 'freelance' && !player.sitting && !apocalypse.active) {
       const desk = refs.desk;
       near.push({ d: 2, label: 'Sit at the desk', act: () => player.sit(desk.x, desk.z, desk.rot) });
     }
@@ -569,7 +579,8 @@ async function start() {
   keys.on('KeyE', () => (mode === 'drive' || mode === 'taxi' ? leaveVehicle() : ui.triggerPrompt()));
   keys.on('Enter', () => mode === 'walk' && ui.triggerPrompt());
   keys.on('Space', () => mode === 'walk' && player.jump());
-  keys.on('KeyN', () => goNext(stations.current));
+  // N walks to the next stop, except at the wheel, where holding it is nitro
+  keys.on('KeyN', () => mode !== 'drive' && goNext(stations.current));
   keys.on('KeyT', () => dayNight.toggle());
   keys.on('KeyH', knock);
   keys.on('KeyF', () => mode === 'walk' && apocalypse.punch());
@@ -599,6 +610,7 @@ async function start() {
   let lookWeight = 0;
   let shift = 0;
   let lift = 0;
+  let kick = 0;
   function frameCamera(dt) {
     const active = mode === 'walk' ? stations.active : null;
     if (active?.look) look.set(...active.look);
@@ -612,6 +624,9 @@ async function start() {
     }
     // keep the scene's centre clear of the card: shift left on wide screens,
     // up on phones (where the card is a bottom sheet)
+    // nitro: the view widens a touch, so it feels fast
+    kick += ((vehicle?.boosting && !reducedMotion ? 9 : 0) - kick) * Math.min(1, dt * 5);
+    const fov = FOV + kick;
     const W = window.innerWidth;
     const H = window.innerHeight;
     const open = !ui.cardEl.hidden && mode !== 'fly';
@@ -620,12 +635,12 @@ async function start() {
     if (shift > 0.5 || lift > 0.5) {
       const fw = W + 2 * shift;
       const fh = H + 2 * lift;
-      camera.fov = (2 * Math.atan(Math.tan((FOV * Math.PI) / 360) * (fh / H)) * 180) / Math.PI;
+      camera.fov = (2 * Math.atan(Math.tan((fov * Math.PI) / 360) * (fh / H)) * 180) / Math.PI;
       camera.aspect = fw / fh;
       camera.setViewOffset(fw, fh, 2 * shift, 2 * lift, W, H);
-    } else if (camera.view?.enabled) {
-      camera.clearViewOffset();
-      camera.fov = FOV;
+    } else if (camera.view?.enabled || Math.abs(camera.fov - fov) > 0.01) {
+      if (camera.view?.enabled) camera.clearViewOffset();
+      camera.fov = fov;
       camera.aspect = W / H;
       camera.updateProjectionMatrix();
     }
@@ -657,13 +672,14 @@ async function start() {
       hudTick += dt;
       if (hudTick > 0.12) {
         hudTick = 0;
-        if (mode === 'drive') ui.drive({ kind: 'drive', speed: vehicle.v });
+        if (mode === 'drive') ui.drive({ kind: 'drive', speed: vehicle.v, nitro: vehicle.nitro, boosting: vehicle.boosting });
       }
     }
     player.update(dt, keys, rig);
     refs.worker.update(dt);
     refs.crowd.update(dt, player.position);
     apocalypse.update(dt, { mode, vehicle });
+    bubbles.update(dt);
     aircraft.update(dt, keys);
     if (mode === 'fly') player.root.position.copy(aircraft.position).y = 0;
     stations.update(t, dt);

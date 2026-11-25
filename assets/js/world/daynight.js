@@ -206,6 +206,9 @@ export class DayNight {
     this.mood = 0; // 0 … 1: how haunted (zombie mode)
     this.moodTarget = 0;
     this.held = false; // the clock stops while the dead walk
+    this.clock = 0; // seconds since start, for flicker
+    this.bolt = 0; // lightning: brightness of the current flash
+    this.nextBolt = 6;
     this.apply();
   }
 
@@ -254,6 +257,21 @@ export class DayNight {
     }
     this.mood += (this.moodTarget - this.mood) * Math.min(1, dt * 1.2);
     if (Math.abs(this.moodTarget - this.mood) < 0.002) this.mood = this.moodTarget;
+    this.clock += dt;
+    // now and then, lightning: a flash, a pause, a second flash
+    this.bolt = Math.max(0, this.bolt - dt * 7);
+    if (this.mood > 0.9 && !this.reducedMotion) {
+      this.nextBolt -= dt;
+      if (this.nextBolt <= 0) {
+        this.bolt = 1;
+        this.boltEcho = 0.22;
+        this.nextBolt = 7 + Math.random() * 12;
+      }
+      if (this.boltEcho > 0) {
+        this.boltEcho -= dt;
+        if (this.boltEcho <= 0) this.bolt = 0.8;
+      }
+    }
     this.apply();
     // sun, moon and stars ride along with the camera, so they stay at the horizon
     const c = camera.position;
@@ -296,6 +314,12 @@ export class DayNight {
     blend(e, 'ground', hemi.groundColor);
     hemi.intensity = blend(e, 'hemi');
     if (m > 0) hemi.color.lerp(this.tmp.set('#4f7058'), m);
+    if (this.bolt > 0) {
+      hemi.color.lerp(this.tmp.set('#dfe8ff'), this.bolt);
+      hemi.intensity += this.bolt * 3;
+      u.uTop.value.lerp(this.tmp.set('#7d8fb8'), this.bolt * 0.7);
+      u.uHorizon.value.lerp(this.tmp.set('#a8b4d0'), this.bolt * 0.6);
+    }
 
     // one light: the sun while it's up, the moon after it sets
     const sunUp = smooth(-0.03, 0.2, e);
@@ -312,7 +336,16 @@ export class DayNight {
 
     this.night = smooth(0.08, -0.05, e);
     this.renderer.toneMappingExposure = 1.05 + 0.2 * this.night;
-    for (const lamp of this.lamps) lamp.night(this.night);
+    // in the apocalypse a third of the lamps flicker, as they do in the films
+    const step = Math.floor(this.clock * 14);
+    this.lamps.forEach((lamp, i) => {
+      let level = this.night;
+      if (m > 0.5 && i % 3 === 0) {
+        const n = Math.sin(i * 12.9898 + step * 78.233) * 43758.5453;
+        if (n - Math.floor(n) < 0.3) level *= 0.08;
+      }
+      lamp.night(level);
+    });
     for (const g of this.glows) g.night(this.night);
 
     // the sun turns orange and swells a little as it sets

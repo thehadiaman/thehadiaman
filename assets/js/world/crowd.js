@@ -35,17 +35,24 @@ function welcomeSign() {
   const sign = new Panel({
     width: 1.5,
     height: 0.66,
-    paint(ctx, w, h) {
+    paint(ctx, w, h, scared = false) {
       ctx.fillStyle = '#ffffff';
       roundRect(ctx, 0, 0, w, h, h * 0.06);
       ctx.fill();
+      if (scared) {
+        // flipped over and scrawled on the back
+        text(ctx, 'HELP!', w / 2, h * 0.72, { cap: h * 0.42, color: '#c8372d', align: 'center', tracking: 0.08 });
+        return;
+      }
       text(ctx, 'WELCOME', w / 2, h * 0.4, { cap: h * 0.2, color: '#1f3f8f', align: 'center', tracking: 0.1 });
       text(ctx, 'HADI!', w / 2, h * 0.8, { cap: h * 0.3, color: '#1b1d21', align: 'center', tracking: 0.06 });
     },
   });
   sign.mesh.material.side = 2;
-  return sign.mesh;
+  return sign;
 }
+
+const SHOUTS = ['RUN, HADI!', 'behind you!', 'not the TypeScript guy!', 'we’ll… wait here…', 'is this… the interview?', 'mind the… zombies…'];
 
 export class Crowd {
   // sides: [{ x0, x1, z0, z1, face }] — the pens either side of the walk.
@@ -55,6 +62,9 @@ export class Crowd {
     this.sides = sides;
     this.people = [];
     this.cheering = 0; // seconds of full cheering left
+    this.scared = false; // zombie mode: hands up, trembling
+    this.bubbles = null;
+    this.shout = 0;
     this.time = 0;
     for (const s of sides) {
       const edge = s.face > 0 ? s.x1 : s.x0; // the barrier runs along the side facing the walk
@@ -105,7 +115,8 @@ export class Crowd {
     const torso = holder?.actor.bone('torso');
     if (torso) {
       holder.style = 'sign';
-      const sign = welcomeSign();
+      this.sign = welcomeSign();
+      const sign = this.sign.mesh;
       // bone space is in the model's unscaled units
       sign.scale.setScalar(1 / 2.4);
       sign.position.set(0, 0.16, 0.22);
@@ -121,9 +132,26 @@ export class Crowd {
     }
   }
 
+  // Zombie mode on or off.
+  scare(on, bubbles) {
+    this.scared = on;
+    this.bubbles = bubbles;
+    this.sign?.refresh(on);
+  }
+
   update(dt, hadi) {
     this.time += dt;
     if (!this.people.length) return;
+    // scared: now and then someone shouts a warning as he passes
+    if (this.scared && this.bubbles) {
+      this.shout -= dt;
+      const p0 = this.people[0].actor.root.position;
+      if (this.shout <= 0 && Math.hypot(hadi.x - p0.x, hadi.z - p0.z) < 26) {
+        this.shout = 3 + Math.random() * 2.5;
+        const who = this.people[Math.floor(Math.random() * this.people.length)];
+        this.bubbles.say(who.actor.root, SHOUTS[Math.floor(Math.random() * SHOUTS.length)], { seconds: 2.4 });
+      }
+    }
     this.cheering = Math.max(0, this.cheering - dt);
     const t = this.time;
     for (const p of this.people) {
@@ -136,7 +164,7 @@ export class Crowd {
       actor.update(dt);
       // the cheer swells in and dies away; after it, the odd wave as he passes
       const wave = near && Math.sin(t * 0.7 + p.phase * 3) > 0.93;
-      const want = this.cheering > 0 || wave ? 1 : 0;
+      const want = this.scared || this.cheering > 0 || wave ? 1 : 0;
       p.lift += (want - p.lift) * Math.min(1, dt * (want ? 5 : 2));
       if (p.lift < 0.001) p.lift = 0;
       // turn a little towards him (never so far they turn their back on the walk)
@@ -164,6 +192,16 @@ export class Crowd {
         bone.rotation.z + (z - bone.rotation.z) * k,
       );
     };
+    if (this.scared) {
+      // hands up, shaking like a leaf
+      const shake = Math.sin(s * 47 + p.phase) * 0.07;
+      set(l, 0, 0, 1.45 + shake);
+      set(r, 0, 0, -1.45 + shake);
+      root.position.y = 0;
+      root.rotation.z = Math.sin(s * 39 + p.phase) * 0.035 * k;
+      return;
+    }
+    root.rotation.z = 0;
     if (p.style === 'both') {
       set(l, 0, 0, 1.25 + Math.sin(s * 9 + p.phase) * 0.2);
       set(r, 0, 0, -1.25 - Math.sin(s * 9 + p.phase + 1.3) * 0.2);

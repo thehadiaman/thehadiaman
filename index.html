@@ -62,7 +62,7 @@
     <div><dt><kbd>Space</kbd></dt><dd>jump</dd></div>
     <div><dt><kbd>T</kbd> or the clock</dt><dd>day or night</dd></div>
   </dl>
-  <p><strong>Cars and taxis.</strong> Walk up to the car outside home (or at Dubai arrivals) and press <kbd>E</kbd> to drive. At a taxi stand, or next to any taxi in Dubai, press <kbd>E</kbd> and pick where to go.</p>
+  <p><strong>Cars and taxis.</strong> Walk up to the car outside home (or at Dubai arrivals) and press <kbd>E</kbd> to drive; hold <kbd>N</kbd> for nitro. At a taxi stand, or next to any taxi in Dubai, press <kbd>E</kbd> and pick where to go.</p>
   <p><strong>The plane.</strong> It flies itself. Press an arrow key to take the controls, land gently on either runway, or hand back to autopilot. Fly into trouble and help arrives.</p>
   <p>Or just press <strong>Next</strong> on each card and I’ll walk you through it.</p>
   <p class="help__small">Prefer reading? <a href="cv.html">The same CV as a plain page.</a></p>
@@ -99,8 +99,9 @@
 <section class="drive" data-drive hidden aria-label="Driving">
   <span class="drive__what" data-dwhat>Driving</span>
   <span class="flight__num" data-dspeed-wrap><b data-dspeed>0</b> km/h</span>
+  <button type="button" class="nitro" data-dnitro data-hold="nitro" aria-label="Nitro (hold)"><kbd>N</kbd> Nitro <span class="nitro__tank"><i></i></span></button>
   <button type="button" data-exit><kbd>E</kbd> Get out</button>
-  <p class="drive__help" data-dhelp>↑ go · ↓ brake, reverse · ← → steer · Shift faster · Space handbrake</p>
+  <p class="drive__help" data-dhelp>↑ go · ↓ brake, reverse · ← → steer · Shift faster · hold N nitro · Space handbrake</p>
 </section>
 
 <section class="picker" data-picker hidden aria-label="Choose a destination">

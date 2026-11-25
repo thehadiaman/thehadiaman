@@ -1,11 +1,33 @@
 // Cars: ones you drive yourself, and taxis that drive themselves to where you
 // ask. Kenney's car models face +z; heading h means facing (sin h, cos h).
-import { MathUtils } from '../../vendor/three.min.js';
+import {
+  MathUtils, Group, Mesh, ConeGeometry, MeshBasicMaterial, AdditiveBlending,
+} from '../../vendor/three.min.js';
 import { place } from './assets.js';
 
 const WHEELBASE = 2.5;
 const HALF_LEN = 1.8;
 const HALF_WIDTH = 1;
+const NITRO_SECONDS = 3.2; // a full tank lasts this long
+const NITRO_REFILL = 9; // and takes this long to fill back up
+const NITRO_TOP = 36; // m/s, about 130 km/h
+
+// Two blue exhaust flames under the back bumper (in the model's own units).
+function nitroFlames() {
+  const group = new Group();
+  const outer = new MeshBasicMaterial({ color: '#4d5dff', transparent: true, opacity: 0.5, blending: AdditiveBlending, depthWrite: false, fog: false });
+  const core = new MeshBasicMaterial({ color: '#cdeeff', transparent: true, opacity: 0.85, blending: AdditiveBlending, depthWrite: false, fog: false });
+  for (const x of [-0.3, 0.3]) {
+    for (const [mat, r, len] of [[outer, 0.1, 0.62], [core, 0.05, 0.34]]) {
+      const geo = new ConeGeometry(r, len, 10, 1, true).translate(0, len / 2, 0).rotateX(-Math.PI / 2);
+      const flame = new Mesh(geo, mat);
+      flame.position.set(x, 0.22, -1.36);
+      group.add(flame);
+    }
+  }
+  group.visible = false;
+  return group;
+}
 
 function wrap(a) {
   return MathUtils.euclideanModulo(a + Math.PI, Math.PI * 2) - Math.PI;
@@ -27,6 +49,9 @@ export class Car {
     this.path = null;
     this.blockedFor = 0;
     this.reverseFor = 0;
+    this.nitro = 1; // tank, 0…1
+    this.boosting = false;
+    this.flames = null;
     this.sync();
   }
 
@@ -64,17 +89,41 @@ export class Car {
   // You at the wheel: ↑/W go, ↓/S brake then reverse, ←/→ steer, Shift faster, Space handbrake.
   drive(dt, keys) {
     const f = keys.forward;
-    const top = keys.run ? 22 : 15;
-    if (f > 0.1) this.v += (this.v < 0 ? 16 : 8) * f * dt;
+    // nitro: hold N for a shove in the back, while the tank lasts
+    this.boosting = Boolean(keys.nitro) && this.nitro > 0.01 && f > -0.1 && !keys.brake && this.v > -0.5;
+    if (this.boosting) this.nitro = Math.max(0, this.nitro - dt / NITRO_SECONDS);
+    else this.nitro = Math.min(1, this.nitro + dt / NITRO_REFILL);
+    const top = this.boosting ? NITRO_TOP : keys.run ? 22 : 15;
+    if (this.boosting) this.v = Math.max(this.v, Math.min(NITRO_TOP, this.v + 22 * dt));
+    else if (f > 0.1) this.v += (this.v < 0 ? 16 : 8) * f * dt;
     else if (f < -0.1) this.v -= (this.v > 0 ? 16 : 6) * -f * dt;
     else this.v -= Math.sign(this.v) * Math.min(Math.abs(this.v), 3 * dt);
     if (keys.brake) this.v -= Math.sign(this.v) * Math.min(Math.abs(this.v), 22 * dt);
-    this.v = MathUtils.clamp(this.v, -6, top);
+    // over the limit (after a boost): ease back down rather than snapping
+    if (this.v > top) this.v = Math.max(top, this.v - 10 * dt);
+    this.v = Math.max(this.v, -6);
+    this.flame(dt);
     // less steering lock at speed, so it doesn't spin out
     const lock = 0.55 - Math.min(0.28, Math.abs(this.v) * 0.013);
     this.steer += (-keys.strafe * lock - this.steer) * Math.min(1, dt * 8);
     if (!this.move(dt)) this.v *= -0.2; // bump
     this.sync();
+  }
+
+  // The exhaust flames: on while boosting, flickering.
+  flame(dt) {
+    if (!this.flames) {
+      if (!this.boosting) return;
+      this.flames = nitroFlames();
+      this.mesh.add(this.flames);
+    }
+    this.flameLevel = MathUtils.clamp((this.flameLevel ?? 0) + (this.boosting ? dt * 10 : -dt * 6), 0, 1);
+    this.flames.visible = this.flameLevel > 0.01;
+    if (!this.flames.visible) return;
+    this.flames.children.forEach((m, i) => {
+      const flicker = 0.75 + Math.random() * 0.5;
+      m.scale.set(1, 1, this.flameLevel * flicker * (i % 2 ? 0.9 : 1));
+    });
   }
 
   // Follow a planned path by pure pursuit; slow for bends and for the stop.

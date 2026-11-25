@@ -22,7 +22,7 @@ export class UI {
       const b = e.target.closest('[data-fly]');
       if (b) onFly(b.dataset.fly);
     });
-    for (const b of this.flightEl.querySelectorAll('[data-hold]')) {
+    for (const b of document.querySelectorAll('[data-hold]')) {
       const set = (on) => () => onHold(b.dataset.hold, on);
       b.addEventListener('pointerdown', set(true));
       b.addEventListener('pointerup', set(false));
@@ -241,6 +241,11 @@ export class UI {
       ? (state.dest ? `Taxi to ${state.dest}` : 'Taxi')
       : 'Driving';
     el.querySelector('[data-dspeed]').textContent = Math.round(Math.abs(state.speed ?? 0) * 3.6);
+    // the nitro tank (only in a car you drive yourself)
+    const gauge = el.querySelector('[data-dnitro]');
+    gauge.hidden = state.kind !== 'drive';
+    gauge.style.setProperty('--tank', String(state.nitro ?? 1));
+    gauge.classList.toggle('is-on', Boolean(state.boosting));
     el.querySelector('[data-dhelp]').hidden = state.kind !== 'drive' || document.body.classList.contains('is-touch');
   }
 
@@ -279,7 +284,7 @@ export class UI {
     this.toastEl.textContent = message;
     this.toastEl.classList.add('is-on');
     clearTimeout(this.toastTimer);
-    this.toastTimer = setTimeout(() => this.toastEl.classList.remove('is-on'), 1800);
+    this.toastTimer = setTimeout(() => this.toastEl.classList.remove('is-on'), Math.max(1800, message.length * 60));
   }
 
   async copy() {

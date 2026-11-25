@@ -79,7 +79,7 @@ export const PLACES = {
 export const VEHICLES = {
   carKerala: { x: 1, z: 113, h: Math.PI },
   taxiKerala: { x: 16, z: 111, h: Math.PI },
-  carDubai: { x: -24, z: -383, h: Math.PI / 2 },
+  carDubai: { x: -24, z: -383, h: Math.PI },
   taxiDubai: { x: 20, z: -389, h: -Math.PI / 2 },
 };
 
