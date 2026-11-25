@@ -23,6 +23,8 @@ import { NavGrid } from './nav.js';
 import { DayNight, lineRoads } from './daynight.js';
 import { Apocalypse } from './zombies.js';
 import { Bubbles } from './bubbles.js';
+import { Sound } from './sound.js';
+import { roadClearance } from './roads.js';
 import { CHAPTERS } from './story.js';
 import { STOPS, VEHICLES, DUBAI_PLACES, RUNWAY_KERALA, RUNWAY_DUBAI } from './layout.js';
 
@@ -106,6 +108,11 @@ async function start() {
   const camera = new PerspectiveCamera(FOV, window.innerWidth / window.innerHeight, 0.5, 2400);
 
   const keys = new Keys();
+  // sound starts on the first click or key press (browsers insist)
+  const sound = new Sound();
+  const wake = () => sound.unlock();
+  window.addEventListener('pointerdown', wake, { passive: true });
+  window.addEventListener('keydown', wake);
   const ui = new UI({
     onChapter: (i) => jumpTo(i),
     onNext: (i, fromLabel) => goNext(i, fromLabel),
@@ -121,7 +128,15 @@ async function start() {
     },
     onHold: (name, on) => (on ? keys.held.add(name) : keys.held.delete(name)),
     onExit: () => leaveVehicle(),
-    onTime: () => dayNight.toggle(),
+    onTime: () => {
+      dayNight.toggle();
+      sound.whoosh();
+    },
+    onMute: () => {
+      sound.unlock();
+      sound.setMuted(!sound.muted);
+      ui.muted(sound.muted);
+    },
     onZombie: (action) => (action === 'punch' ? apocalypse.punch() : toggleZombies()),
   });
 
@@ -261,10 +276,14 @@ async function start() {
   // Press H five times (or click Hadi five times) to start it, and again to end it.
   const bubbles = new Bubbles(scene);
   const apocalypse = new Apocalypse({ scene, world, nav, player, ui, dayNight, bubbles, desk: refs.desk });
+  apocalypse.sfx = sound;
+  refs.crowd.sfx = sound;
+  for (const car of [carKerala, carDubai]) car.onBump = (v) => sound.thud(v);
   let zombieModel = null;
   async function toggleZombies() {
     if (apocalypse.active) {
       apocalypse.stop();
+      sound.sting(false);
       stations.haunt(false);
       refs.crowd.scare(false);
       ui.toast('The sun comes up. The dead go back to sleep.');
@@ -278,6 +297,7 @@ async function start() {
     }
     if (player.sitting) player.stand();
     apocalypse.start(zombieModel, clips);
+    sound.sting(true);
     stations.haunt(true);
     refs.crowd.scare(true, bubbles);
     ui.card(null);
@@ -528,7 +548,7 @@ async function start() {
     // (in zombie mode the desk is taken)
     if (stations.active?.id === 'freelance' && !player.sitting && !apocalypse.active) {
       const desk = refs.desk;
-      near.push({ d: 2, label: 'Sit at the desk', act: () => player.sit(desk.x, desk.z, desk.rot) });
+      near.push({ d: 2, label: 'Sit at the desk', act: () => { player.sit(desk.x, desk.z, desk.rot); sound.sit(); } });
     }
     near.sort((a, b) => a.d - b.d);
     ui.prompt(near[0]?.label ?? null, near[0]?.act);
@@ -537,7 +557,10 @@ async function start() {
   // Walk round to the front of a bench, then sit down on it.
   const BENCH_LIFT = 0.3;
   function sitOn(bench) {
-    const sit = () => player.sit(bench.seat[0], bench.seat[1], bench.face, { lift: BENCH_LIFT, up: bench.up });
+    const sit = () => {
+      player.sit(bench.seat[0], bench.seat[1], bench.face, { lift: BENCH_LIFT, up: bench.up });
+      sound.sit();
+    };
     const p = player.position;
     if (Math.hypot(bench.up[0] - p.x, bench.up[1] - p.z) < 0.6) return sit();
     walkTo(bench.up[0], bench.up[1], { arrive: sit });
@@ -578,10 +601,21 @@ async function start() {
 
   keys.on('KeyE', () => (mode === 'drive' || mode === 'taxi' ? leaveVehicle() : ui.triggerPrompt()));
   keys.on('Enter', () => mode === 'walk' && ui.triggerPrompt());
-  keys.on('Space', () => mode === 'walk' && player.jump());
+  keys.on('Space', () => {
+    if (mode !== 'walk' || player.airborne || player.sitting) return;
+    player.jump();
+    if (player.airborne) sound.jump();
+  });
   // N walks to the next stop, except at the wheel, where holding it is nitro
   keys.on('KeyN', () => mode !== 'drive' && goNext(stations.current));
-  keys.on('KeyT', () => dayNight.toggle());
+  keys.on('KeyT', () => {
+    dayNight.toggle();
+    sound.whoosh();
+  });
+  keys.on('KeyM', () => {
+    sound.setMuted(!sound.muted);
+    ui.muted(sound.muted);
+  });
   keys.on('KeyH', knock);
   keys.on('KeyF', () => mode === 'walk' && apocalypse.punch());
 
@@ -649,6 +683,28 @@ async function start() {
   rig.snap(player.position.clone().add(new Vector3(0, 1.5, 0)));
   renderer.compile(scene, camera);
 
+  /* ------------------------------------------------ sound helpers */
+
+  // where each board hangs, for the clatter's direction and distance
+  const boardAt = {};
+  for (const [key, board] of [['departures', refs.departures], ['arrivals', refs.arrivals], ['migration', refs.migrationBoard]]) {
+    boardAt[key] = board.group.getWorldPosition(new Vector3());
+  }
+  // what his feet are on: the Kerala path, Dubai's paving, sand, or grass
+  function surfaceAt(x, z) {
+    const onRoad = roadClearance(x, z, { reach: 1 }) < 0;
+    if (onDubaiSide(z)) return onRoad ? 'paved' : 'path';
+    return onRoad ? 'path' : 'grass';
+  }
+  const zombieSpots = [];
+  function nearZombies() {
+    zombieSpots.length = 0;
+    for (const z of apocalypse.zombies) {
+      if (z.state === 'walk' && z.actor.root.visible) zombieSpots.push(z.actor.root.position);
+    }
+    return zombieSpots;
+  }
+
   /* ------------------------------------------------ the loop */
 
   let last = performance.now();
@@ -684,15 +740,32 @@ async function start() {
     if (mode === 'fly') player.root.position.copy(aircraft.position).y = 0;
     stations.update(t, dt);
     updatePrompt();
-    refs.departures.update(now);
-    refs.arrivals.update(now);
-    refs.migrationBoard.update(now);
+    sound.flaps(refs.departures.update(now), boardAt.departures.x, boardAt.departures.z);
+    sound.flaps(refs.arrivals.update(now), boardAt.arrivals.x, boardAt.arrivals.z);
+    sound.flaps(refs.migrationBoard.update(now), boardAt.migration.x, boardAt.migration.z);
     frameCamera(dt);
     rig.update(dt, focus);
     const subject = mode === 'fly' ? aircraft.position : player.position;
     foliageFocus.value.copy(subject).y += 1.2;
     sky.update(camera);
     dayNight.update(dt, camera, subject);
+    sound.update(dt, {
+      camera,
+      walking: mode === 'walk' && player.speed > 0.6 && !player.airborne && !player.sitting && player.root.visible,
+      running: player.speed > 6,
+      surface: surfaceAt(player.position.x, player.position.z),
+      car: mode === 'drive' || mode === 'taxi' ? vehicle : null,
+      boosting: Boolean(vehicle?.boosting),
+      plane: aircraft.mode !== 'parked' ? { speed: aircraft.v } : null,
+      jetpack: rescuer.root.visible,
+      altitude: mode === 'fly' ? aircraft.position.y : 0,
+      night: dayNight.night,
+      mood: dayNight.mood,
+      bolt: dayNight.bolt,
+      kerala: !onDubaiSide(subject.z),
+      crowd: { x: 0, z: -381, scared: refs.crowd.scared },
+      zombies: apocalypse.active ? nearZombies() : null,
+    });
     lights.follow(subject);
     ui.place(camera, stations.stops, player.position, mode === 'fly');
     renderer.render(scene, camera);
@@ -703,10 +776,11 @@ async function start() {
     window.__w = {
       rig, player, camera, stations, aircraft, jumpTo, renderer, scene, world, nav, walkTo,
       vehicleNav, carKerala, carDubai, taxiKerala, taxiDubai, takeTaxi, enterCar, leaveVehicle, rideTo,
-      board, keys, dayNight, sitOn, apocalypse, toggleZombies, get mode() { return mode; }, get vehicle() { return vehicle; },
+      board, keys, dayNight, sitOn, apocalypse, toggleZombies, sound, get mode() { return mode; }, get vehicle() { return vehicle; },
     };
   }
   ui.ready();
+  ui.muted(sound.muted);
   ui.card(stations.stops[0]);
   if (new URLSearchParams(location.search).has('zombies')) toggleZombies();
   // the Dubai crowd's models come down in the background

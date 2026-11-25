@@ -127,7 +127,7 @@ export function createFlapBoard({ glyphs, cols, rows, title, icon, status, clock
     update(now) {
       const { busy, flips } = stepUnits(units, now);
       if (busy || flips) banks.forEach((b) => b.flush());
-      return busy;
+      return flips; // how many flaps fell this frame (for the clatter)
     },
   };
 }

@@ -106,7 +106,11 @@ export class Car {
     // less steering lock at speed, so it doesn't spin out
     const lock = 0.55 - Math.min(0.28, Math.abs(this.v) * 0.013);
     this.steer += (-keys.strafe * lock - this.steer) * Math.min(1, dt * 8);
-    if (!this.move(dt)) this.v *= -0.2; // bump
+    if (!this.move(dt)) {
+      // bump
+      if (Math.abs(this.v) > 1.5) this.onBump?.(this.v);
+      this.v *= -0.2;
+    }
     this.sync();
   }
 

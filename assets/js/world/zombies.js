@@ -40,6 +40,7 @@ export class Apocalypse {
     this.desk = desk; // { x, z, rot }: where the freelancer sits
     this.freelancer = null;
     this.chatter = 2; // seconds until someone groans
+    this.sfx = null; // the sound engine, if any
     this.scene = scene;
     this.world = world;
     this.nav = nav;
@@ -149,6 +150,7 @@ export class Apocalypse {
   // F: a right hook. Knocks down every zombie close in front of him.
   punch() {
     if (!this.active || !this.player.punch()) return;
+    this.sfx?.punch();
     const p = this.player.position;
     const fx = Math.sin(this.player.heading);
     const fz = Math.cos(this.player.heading);
@@ -171,6 +173,7 @@ export class Apocalypse {
   knock(z, dx, dz, words) {
     const head = z.actor.root.position;
     if (words) this.bubbles.pop(_at.set(head.x, head.y + 1.6, head.z), words[Math.floor(this.rand() * words.length)]);
+    this.sfx?.bonk(head.x, head.z);
     z.state = 'down';
     z.down = 0;
     z.fly = { x: dx * 6, z: dz * 6 };
@@ -283,6 +286,7 @@ export class Apocalypse {
     const { z, d } = near[Math.floor(this.rand() * near.length)];
     const lines = d < 5 ? CLOSE : GROANS;
     this.bubbles.say(z.actor.root, lines[Math.floor(this.rand() * lines.length)]);
+    this.sfx?.groan(z.actor.root.position.x, z.actor.root.position.z);
   }
 
   // One shambling step, bending round whatever is in the way.
@@ -312,6 +316,7 @@ export class Apocalypse {
     this.biteCooldown = 1.3;
     this.hearts -= 1;
     this.ui.flash();
+    this.sfx?.bite();
     // knocked back a step
     const p = this.player.position;
     const bx = p.x + (dx / (d || 1)) * 1.4;

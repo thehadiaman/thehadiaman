@@ -6,7 +6,7 @@ const $ = (sel) => document.querySelector(sel);
 const v = new Vector3();
 
 export class UI {
-  constructor({ onChapter, onNext, onAction, onFly, onHold, onExit, onTime, onZombie }) {
+  constructor({ onChapter, onNext, onAction, onFly, onHold, onExit, onTime, onZombie, onMute }) {
     this.cardEl = $('[data-card]');
     this.promptEl = $('[data-prompt]');
     this.fadeEl = $('[data-fade]');
@@ -34,6 +34,9 @@ export class UI {
     this.driveEl.querySelector('[data-exit]').addEventListener('click', () => onExit());
     // destination picker
     this.pickerEl = $('[data-picker]');
+    // sound on/off
+    this.muteEl = $('[data-mute]');
+    this.muteEl.addEventListener('click', () => onMute?.());
     // zombie mode
     this.zombieEl = $('[data-zombie]');
     this.zombieEl.addEventListener('click', (e) => {
@@ -180,6 +183,11 @@ export class UI {
     [...hearts.children].forEach((h, i) => h.classList.toggle('is-lost', i >= state.hearts));
     hearts.setAttribute('aria-label', `${state.hearts} of ${state.max} lives`);
     this.zombieEl.querySelector('[data-zdowned]').textContent = String(state.downed);
+  }
+
+  muted(on) {
+    this.muteEl.setAttribute('aria-pressed', String(on));
+    this.muteEl.querySelector('[data-mute-label]').textContent = on ? 'Turn sound on' : 'Mute sound';
   }
 
   // A red pulse round the edges: bitten.

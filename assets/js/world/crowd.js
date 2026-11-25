@@ -127,6 +127,7 @@ export class Crowd {
   // Hadi is here: everybody cheers for a while, then calms down.
   cheer(seconds = 7) {
     this.cheering = Math.max(this.cheering, seconds);
+    this.sfx?.cheerFor(seconds);
     for (const p of this.people) {
       if (p.style !== 'sign' && Math.random() < 0.4) p.actor.play('emote-yes', { once: true, then: 'idle' });
     }

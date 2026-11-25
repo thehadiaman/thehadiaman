@@ -147,6 +147,25 @@ kbd {
   cursor: pointer;
 }
 .hud__time:hover { background: rgba(22, 24, 29, 0.07); }
+.hud__sound {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+}
+.hud__sound:hover { background: rgba(22, 24, 29, 0.07); }
+.hud__sound svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.hud__sound .hud__speaker { fill: var(--ink); }
+.hud__sound .hud__x { display: none; }
+.hud__sound[aria-pressed="true"] .hud__waves { display: none; }
+.hud__sound[aria-pressed="true"] .hud__x { display: inline; stroke: #c8372d; }
 .hud__time svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; }
 .hud__time .hud__sun circle { fill: var(--marigold); stroke: var(--ink); }
 .hud__time .hud__moon { fill: #c9d3ea; stroke: var(--ink); stroke-width: 1.4; }
@@ -609,8 +628,12 @@ kbd {
   .hud__id strong { font-size: 1.15rem; }
   .hud__links a:not(.hud__cta):not([href$='.pdf']) { display: none; }
   .hud__links a span { display: none; }
-  .hud__time { padding: 0 8px; }
+  .hud__time { padding: 0 6px; }
   .hud__time [data-time-text] { display: none; }
+  .hud__id strong, .hud__links a { white-space: nowrap; }
+  .hud__links { gap: 2px; padding: 4px; }
+  .hud__links a { padding: 0 8px; }
+  .hud__sound, .hud__help { width: 32px; }
   .card {
     top: auto;
     left: 10px;
