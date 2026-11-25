@@ -117,6 +117,13 @@ export async function loadLater() {
   return Object.fromEntries(entries);
 }
 
+// One model, on demand (the zombies, the first time they're called up).
+export async function loadOne(path) {
+  const gltf = await new GLTFLoader().loadAsync(BASE + path);
+  tidy(gltf.scene);
+  return gltf;
+}
+
 // Kenney colour maps are palettes: sample them crisply and let meshes cast shadows.
 function tidy(root) {
   root.traverse((o) => {

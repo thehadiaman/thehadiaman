@@ -203,7 +203,20 @@ export class DayNight {
     this.tmp = new Color();
     this.tmp2 = new Color();
     this.night = 0;
+    this.mood = 0; // 0 … 1: how haunted (zombie mode)
+    this.moodTarget = 0;
+    this.held = false; // the clock stops while the dead walk
     this.apply();
+  }
+
+  // Zombie mode: midnight, a red moon and close, murky fog. Off: the sun comes up.
+  haunt(on) {
+    this.moodTarget = on ? 1 : 0;
+    this.held = on;
+    const target = on ? 23.3 : 7.4;
+    const ahead = (target - this.hour + 24) % 24;
+    if (this.reducedMotion) this.setHour(target);
+    else this.rush = { from: this.hour, ahead, start: performance.now(), seconds: on ? 2.6 : 3.2 };
   }
 
   get isNight() {
@@ -236,9 +249,11 @@ export class DayNight {
       const k = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
       this.hour = (r.from + r.ahead * k) % 24;
       if (t >= 1) this.rush = null;
-    } else {
+    } else if (!this.held) {
       this.hour = (this.hour + dt / (this.isNight ? NIGHT_SECONDS_PER_HOUR : DAY_SECONDS_PER_HOUR)) % 24;
     }
+    this.mood += (this.moodTarget - this.mood) * Math.min(1, dt * 1.2);
+    if (Math.abs(this.moodTarget - this.mood) < 0.002) this.mood = this.moodTarget;
     this.apply();
     // sun, moon and stars ride along with the camera, so they stay at the horizon
     const c = camera.position;
@@ -263,7 +278,15 @@ export class DayNight {
     u.uGlow.value.multiplyScalar(smooth(-0.12, 0.0, e));
     u.uGlowSize.value = 4 + 8 * smooth(0.0, 0.3, e);
     u.uSunDir.value.copy(sun);
+    const m = this.mood;
+    if (m > 0) {
+      u.uTop.value.lerp(this.tmp.set('#060d09'), m);
+      u.uHorizon.value.lerp(this.tmp.set('#1f2b22'), m);
+      u.uBelow.value.lerp(this.tmp.set('#0b1510'), m);
+    }
     this.sky.fog.color.copy(u.uHorizon.value);
+    this.sky.fog.near = 160 - 130 * m;
+    this.sky.fog.far = 820 - 600 * m;
     // clouds take their colour from the sky round them, so their undersides
     // glow at sunset and go navy at night instead of turning muddy
     if (this.clouds) this.clouds.emissive.copy(u.uHorizon.value).multiplyScalar(0.55);
@@ -272,6 +295,7 @@ export class DayNight {
     blend(e, 'sky', hemi.color);
     blend(e, 'ground', hemi.groundColor);
     hemi.intensity = blend(e, 'hemi');
+    if (m > 0) hemi.color.lerp(this.tmp.set('#4f7058'), m);
 
     // one light: the sun while it's up, the moon after it sets
     const sunUp = smooth(-0.03, 0.2, e);
@@ -301,10 +325,13 @@ export class DayNight {
     this.moonHalo.material.opacity = 0.25 + 0.6 * this.night;
     // in daylight the moon is a pale ghost
     this.moon.material.opacity = 0.35 + 0.65 * this.night;
+    // a blood moon over the apocalypse
+    this.moon.material.color.set('#ffffff').lerp(this.tmp.set('#ff5a3c'), m);
+    this.moonHalo.material.color.set('#ffffff').lerp(this.tmp.set('#ff4a30'), m);
     this.moon.material.transparent = true;
     const starOpacity = smooth(-0.02, -0.22, e);
     for (const s of this.stars) {
-      s.material.opacity = starOpacity;
+      s.material.opacity = starOpacity * (1 - 0.7 * m);
       s.visible = starOpacity > 0.01;
       s.rotation.y = this.hour * 0.02;
     }

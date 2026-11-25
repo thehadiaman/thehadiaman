@@ -5,7 +5,7 @@ import {
   Vector2, Vector3, Plane, Raycaster, MathUtils, MeshStandardMaterial, Mesh, TorusGeometry,
 } from '../../vendor/three.min.js';
 import { glyphAtlas, fontsReady } from '../flaps.js';
-import { loadModels, loadLater } from './assets.js';
+import { loadModels, loadLater, loadOne } from './assets.js';
 import { createSky, createLights, createSea, createLand, createRoads, createClouds } from './terrain.js';
 import { World } from './world.js';
 import { buildKerala, wind, focus as foliageFocus } from './kerala.js';
@@ -21,6 +21,7 @@ import { Car } from './vehicles.js';
 import { UI } from './ui.js';
 import { NavGrid } from './nav.js';
 import { DayNight, lineRoads } from './daynight.js';
+import { Apocalypse } from './zombies.js';
 import { CHAPTERS } from './story.js';
 import { STOPS, VEHICLES, DUBAI_PLACES, RUNWAY_KERALA, RUNWAY_DUBAI } from './layout.js';
 
@@ -120,6 +121,7 @@ async function start() {
     onHold: (name, on) => (on ? keys.held.add(name) : keys.held.delete(name)),
     onExit: () => leaveVehicle(),
     onTime: () => dayNight.toggle(),
+    onZombie: (action) => (action === 'punch' ? apocalypse.punch() : toggleZombies()),
   });
 
   await fontsReady();
@@ -225,6 +227,11 @@ async function start() {
       if (mode !== 'walk') return;
       ndc.set((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
       ray.setFromCamera(ndc, camera);
+      // clicking Hadi himself (five times calls up the zombies)
+      if (ray.intersectObject(player.root, true).length) {
+        knock();
+        return;
+      }
       const hit = new Vector3();
       if (!ray.ray.intersectPlane(ground, hit)) return;
       if (onDubaiSide(hit.z) !== onDubaiSide(player.position.z)) {
@@ -248,6 +255,51 @@ async function start() {
 
   const stations = new Stations({ scene, world, player, ui, reducedMotion });
   stations.onBoard = board;
+
+  /* ------------------------------------------------ the secret: zombies */
+  // Press H five times (or click Hadi five times) to start it, and again to end it.
+  const apocalypse = new Apocalypse({ scene, world, nav, player, ui, dayNight });
+  let zombieModel = null;
+  async function toggleZombies() {
+    if (apocalypse.active) {
+      apocalypse.stop();
+      ui.toast('The sun comes up. The dead go back to sleep.');
+      return;
+    }
+    try {
+      zombieModel ??= await loadOne('characters/character-zombie.glb');
+    } catch (error) {
+      console.warn('Zombie model failed to load', error);
+      return;
+    }
+    if (player.sitting) player.stand();
+    apocalypse.start(zombieModel, clips);
+    ui.card(null);
+    ui.toast(coarse ? 'Zombie apocalypse. Run!' : 'Zombie apocalypse. Run (Shift), punch (F), or find a car.');
+  }
+  // they got him: wake up at the last stop
+  apocalypse.onCaught = async () => {
+    if (mode !== 'walk') return;
+    player.locked = true;
+    await ui.fade(true);
+    const stop = stations.stops[stations.current] ?? stations.stops[0];
+    player.teleport(stop.x, stop.z, stop.face);
+    rig.snap(player.position.clone().add(new Vector3(0, 1.5, 0)));
+    player.locked = false;
+    await ui.fade(false);
+    ui.toast('Bitten three times. You wake up back at the stop.');
+  };
+  // five presses (or clicks on him) within three seconds
+  const knocks = [];
+  function knock() {
+    const now = performance.now();
+    knocks.push(now);
+    while (knocks.length && now - knocks[0] > 3000) knocks.shift();
+    if (knocks.length >= 5) {
+      knocks.length = 0;
+      toggleZombies();
+    }
+  }
 
   // the plane's stand changed: re-read both runways and aprons for the planners
   function refreshPlane() {
@@ -519,6 +571,8 @@ async function start() {
   keys.on('Space', () => mode === 'walk' && player.jump());
   keys.on('KeyN', () => goNext(stations.current));
   keys.on('KeyT', () => dayNight.toggle());
+  keys.on('KeyH', knock);
+  keys.on('KeyF', () => mode === 'walk' && apocalypse.punch());
 
   // a small ring where you tapped
   const ping = document.querySelector('[data-ping]');
@@ -609,6 +663,7 @@ async function start() {
     player.update(dt, keys, rig);
     refs.worker.update(dt);
     refs.crowd.update(dt, player.position);
+    apocalypse.update(dt, { mode, vehicle });
     aircraft.update(dt, keys);
     if (mode === 'fly') player.root.position.copy(aircraft.position).y = 0;
     stations.update(t, dt);
@@ -632,11 +687,12 @@ async function start() {
     window.__w = {
       rig, player, camera, stations, aircraft, jumpTo, renderer, scene, world, nav, walkTo,
       vehicleNav, carKerala, carDubai, taxiKerala, taxiDubai, takeTaxi, enterCar, leaveVehicle, rideTo,
-      board, keys, dayNight, sitOn, get mode() { return mode; }, get vehicle() { return vehicle; },
+      board, keys, dayNight, sitOn, apocalypse, toggleZombies, get mode() { return mode; }, get vehicle() { return vehicle; },
     };
   }
   ui.ready();
   ui.card(stations.stops[0]);
+  if (new URLSearchParams(location.search).has('zombies')) toggleZombies();
   // the Dubai crowd's models come down in the background
   loadLater()
     .then((L) => refs.crowd.populate([L.maleA, L.femaleA, M.femaleB, L.maleG, L.femaleC, L.maleB, M.worker, L.maleE], clips, { few: coarse }))

@@ -119,6 +119,14 @@ export class Player {
     this.actor.play('idle', { fade: 0.3 });
   }
 
+  // A right hook (zombie mode). Stops him for a moment while it lands.
+  punch() {
+    if (this.sitting || this.locked || this.airborne) return false;
+    this.actor.play('attack-melee-right', { once: true, then: 'idle', fade: 0.06, speed: 1.5 });
+    this.busyUntil = this.time + 0.35;
+    return true;
+  }
+
   jump() {
     if (this.airborne || this.sitting || this.locked) return;
     this.airborne = true;

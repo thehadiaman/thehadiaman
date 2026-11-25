@@ -16,7 +16,7 @@ but credit is given here anyway.
 
 Changes made for this site: the character files (including the robot,
 character-robot.glb, used as the rescue flyer, and the people in the Dubai
-arrivals crowd) had unused animation clips removed to save space (the NPCs
+arrivals crowd and the zombies) had unused animation clips removed to save space (the NPCs
 borrow the avatar's clips); aid-glasses.glb gets clear lenses and dark rims
 at load time; and the suburban
 houses' green roofs are recoloured to terracotta at load time.

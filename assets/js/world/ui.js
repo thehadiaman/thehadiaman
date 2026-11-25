@@ -6,7 +6,7 @@ const $ = (sel) => document.querySelector(sel);
 const v = new Vector3();
 
 export class UI {
-  constructor({ onChapter, onNext, onAction, onFly, onHold, onExit, onTime }) {
+  constructor({ onChapter, onNext, onAction, onFly, onHold, onExit, onTime, onZombie }) {
     this.cardEl = $('[data-card]');
     this.promptEl = $('[data-prompt]');
     this.fadeEl = $('[data-fade]');
@@ -34,6 +34,13 @@ export class UI {
     this.driveEl.querySelector('[data-exit]').addEventListener('click', () => onExit());
     // destination picker
     this.pickerEl = $('[data-picker]');
+    // zombie mode
+    this.zombieEl = $('[data-zombie]');
+    this.zombieEl.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-zact]');
+      if (b) onZombie?.(b.dataset.zact);
+    });
+    this.biteEl = $('[data-bite]');
     // the clock: shows the world's time, and swaps day for night
     this.timeEl = $('[data-time]');
     this.timeText = this.timeEl.querySelector('[data-time-text]');
@@ -164,6 +171,23 @@ export class UI {
   }
 
   // The flight panel. state: { mode, dest, alt, speed, onGround, banner } or null to hide.
+  // The zombie panel: lives and knock-downs. null hides it.
+  zombie(state) {
+    this.zombieEl.hidden = !state;
+    if (!state) return;
+    const hearts = this.zombieEl.querySelector('[data-zhearts]');
+    if (hearts.childElementCount !== state.max) hearts.replaceChildren(...Array.from({ length: state.max }, () => document.createElement('i')));
+    [...hearts.children].forEach((h, i) => h.classList.toggle('is-lost', i >= state.hearts));
+    hearts.setAttribute('aria-label', `${state.hearts} of ${state.max} lives`);
+    this.zombieEl.querySelector('[data-zdowned]').textContent = String(state.downed);
+  }
+
+  // A red pulse round the edges: bitten.
+  flash() {
+    this.biteEl.classList.add('is-on');
+    requestAnimationFrame(() => requestAnimationFrame(() => this.biteEl.classList.remove('is-on')));
+  }
+
   // Shown to the nearest ten minutes, so it ticks over calmly.
   clock(hour, night) {
     const total = Math.floor((hour * 60) / 10) * 10;

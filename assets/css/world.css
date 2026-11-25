@@ -421,6 +421,61 @@ kbd {
 .drive__help[hidden] { display: none; }
 .is-driving .prompt { display: none; }
 
+/* zombie mode */
+.zombie {
+  position: fixed;
+  left: 50%;
+  top: 14px;
+  z-index: 11;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 14px;
+  width: max-content;
+  max-width: min(460px, calc(100vw - 24px));
+  padding: 9px 12px;
+  border-radius: 8px;
+  border-top: 3px solid #c8372d;
+  background: rgba(20, 22, 20, 0.94);
+  color: #efe9dc;
+  transform: translateX(-50%);
+}
+.zombie[hidden] { display: none; }
+.zombie__title { color: #ff6a55; font: 600 1.05rem/1 var(--cond); letter-spacing: 0.06em; text-transform: uppercase; }
+.zombie__hearts { display: inline-flex; gap: 3px; }
+.zombie__hearts i { width: 13px; height: 12px; background: #c8372d; clip-path: path('M6.5 12 L0.8 6.2 A3.3 3.3 0 0 1 6.5 1.6 A3.3 3.3 0 0 1 12.2 6.2 Z'); }
+.zombie__hearts i.is-lost { background: #4a4d4a; }
+.zombie__count { color: #b9b3a5; font-size: 0.85rem; }
+.zombie__count b { color: #fff; font: 600 1rem/1 var(--cond); }
+.zombie button {
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid #5c5f5b;
+  border-radius: 4px;
+  background: none;
+  color: #efe9dc;
+  font: 600 0.82rem/1 var(--sans);
+  cursor: pointer;
+}
+.zombie button:hover { border-color: #ff6a55; }
+.zombie kbd { margin-right: 3px; color: var(--ink); }
+.zombie__punch { display: none; }
+.is-touch .zombie__punch { display: inline-block; border-color: #c8372d; }
+.zombie__help { flex-basis: 100%; color: #8f8a7e; font-size: 0.76rem; text-align: center; }
+.zombie__help kbd { margin: 0 1px; }
+.is-touch .zombie__help, .is-touch .zombie kbd { display: none; }
+.bite {
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 45%, rgba(190, 20, 10, 0.55));
+  opacity: 0;
+  transition: opacity 0.5s ease-out;
+}
+.bite.is-on { opacity: 1; transition: none; }
+
 /* destination picker */
 .picker {
   position: fixed;
@@ -548,4 +603,5 @@ kbd {
   .flight { bottom: max(8px, env(safe-area-inset-bottom)); }
   .flight__help { display: none; }
   .drive { bottom: 60px; }
+  .zombie { top: 62px; gap: 6px 10px; }
 }
