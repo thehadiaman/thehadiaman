@@ -1,12 +1,11 @@
-// Dubai: arrivals, someone waiting with a sign, and the city.
+// Dubai: arrivals, a crowd to welcome him, and the city.
 import {
   Mesh, SphereGeometry, MeshStandardMaterial, Vector3,
 } from '../../vendor/three.min.js';
 import { place, scatter, footprint } from './assets.js';
-import { Panel, text, roundRect } from './canvasart.js';
 import { createTerminal, createSupertall, createLamp, sandstone } from './structures.js';
 import { createFlapBoard } from './flapboard.js';
-import { Actor } from './actors.js';
+import { Crowd } from './crowd.js';
 import { DUBAI, STOPS, PLACES, RUNWAY_DUBAI, VEHICLES } from './layout.js';
 import { inside, SEA_LEVEL } from './terrain.js';
 import { rng } from './world.js';
@@ -14,7 +13,7 @@ import { ROADS } from './roads.js';
 import { Car } from './vehicles.js';
 import { windPatch, stillPatch, addSign, taxiSign } from './kerala.js';
 
-export function buildDubai({ scene, M, world, glyphs, clips }) {
+export function buildDubai({ scene, M, world, glyphs }) {
   const R = rng(7);
   const refs = world.refs;
   const solid = (obj, shrink = 0.3) => {
@@ -41,33 +40,16 @@ export function buildDubai({ scene, M, world, glyphs, clips }) {
   refs.arrivals.group.rotation.y = Math.PI;
   scene.add(refs.arrivals.group);
 
-  // a recruiter waiting at arrivals, holding up a name sign
-  refs.recruiter = new Actor(M.recruiter, clips, { x: 4.5, z: -381, rot: Math.PI });
-  scene.add(refs.recruiter.root);
-  refs.recruiter.play('idle');
-  world.circle(4.5, -381, 0.6);
-  const nameSign = new Panel({
-    width: 1.25,
-    height: 0.62,
-    paint(ctx, w, h) {
-      ctx.fillStyle = '#ffffff';
-      roundRect(ctx, 0, 0, w, h, h * 0.06);
-      ctx.fill();
-      text(ctx, 'HADI AMAN', w / 2, h * 0.6, { cap: h * 0.26, color: '#1b1d21', align: 'center', tracking: 0.04 });
-    },
+  // the welcome: people behind the barriers either side of the exit, who cheer
+  // when he walks out (they're filled in once their models have loaded)
+  refs.crowd = new Crowd({
+    scene,
+    world,
+    sides: [
+      { x0: 3.2, x1: 7.6, z0: -385.8, z1: -374.2, face: -1, rows: 2 },
+      { x0: -7.4, x1: -3.2, z0: -385.8, z1: -374.2, face: 1, rows: 2 },
+    ],
   });
-  nameSign.mesh.material.side = 2;
-  refs.nameSign = nameSign.mesh;
-  const torso = refs.recruiter.bone('torso');
-  if (torso) {
-    // held in front of the chest (bone space is in the model's unscaled units)
-    nameSign.mesh.scale.setScalar(1 / 2.4);
-    nameSign.mesh.position.set(0, 0.12, 0.2);
-    torso.add(nameSign.mesh);
-  } else {
-    nameSign.mesh.position.set(4.5, 2, -380.4);
-    scene.add(nameSign.mesh);
-  }
 
   // a pair of lamps framing the arrivals plaza, arms reaching towards the walk
   for (const side of [-1, 1]) {

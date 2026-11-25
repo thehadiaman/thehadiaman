@@ -127,10 +127,8 @@ export class Stations {
         break;
       case 'dubai':
         this.startArrivals();
-        this.after(0.6, () => {
-          r.recruiter.play('emote-yes', { once: true, then: 'idle' });
-          this.player.gesture('emote-yes', 1.4);
-        });
+        r.crowd.cheer(8);
+        this.after(0.8, () => this.player.gesture('emote-yes', 1.4));
         break;
       default:
     }
@@ -252,8 +250,7 @@ export class Stations {
         this.enter(inside);
       }
     }
-    // the worker turns to look at Hadi as he comes near (the recruiter keeps her
-    // name sign facing the plaza, so it stays readable)
+    // the worker turns to look at Hadi as he comes near
     for (const npc of [this.refs.worker]) {
       const root = npc.root;
       const dx = pos.x - root.position.x;

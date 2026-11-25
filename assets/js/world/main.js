@@ -2,10 +2,10 @@
 // Hadi is always in one of four modes: walking, driving, riding a taxi, or flying.
 import {
   WebGLRenderer, Scene, PerspectiveCamera, LoadingManager, PCFShadowMap, NeutralToneMapping,
-  Vector2, Vector3, Plane, Raycaster, MathUtils,
+  Vector2, Vector3, Plane, Raycaster, MathUtils, MeshStandardMaterial, Mesh, TorusGeometry,
 } from '../../vendor/three.min.js';
 import { glyphAtlas, fontsReady } from '../flaps.js';
-import { loadModels } from './assets.js';
+import { loadModels, loadLater } from './assets.js';
 import { createSky, createLights, createSea, createLand, createRoads, createClouds } from './terrain.js';
 import { World } from './world.js';
 import { buildKerala, wind, focus as foliageFocus } from './kerala.js';
@@ -27,10 +27,63 @@ import { STOPS, VEHICLES, DUBAI_PLACES, RUNWAY_KERALA, RUNWAY_DUBAI } from './la
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const coarse = matchMedia('(pointer: coarse)').matches;
 const FOV = 48;
+// where the glasses sit, in the head bone's (unscaled) space
+const GLASSES = { y: 0.085, z: 0.098, scale: 1.12 };
 const debug = location.search.includes('debug');
 document.body.classList.toggle('is-touch', coarse);
 
 const wrap = (a) => MathUtils.euclideanModulo(a + Math.PI, Math.PI * 2) - Math.PI;
+
+// Kenney's glasses come with grey lenses you can't see through: split the
+// lenses off (they use the light swatch at the right of the palette) and make
+// them clear glass, with dark frames.
+function eyeglasses(gltf) {
+  const root = gltf.scene.clone(true);
+  const frameMaterial = new MeshStandardMaterial({ color: '#202329', roughness: 0.45 });
+  root.traverse((o) => {
+    if (!o.isMesh) return;
+    const geo = o.geometry.clone();
+    const uv = geo.attributes.uv;
+    const index = geo.index ? Array.from(geo.index.array) : [...Array(geo.attributes.position.count).keys()];
+    const frame = [];
+    const lens = [];
+    for (let i = 0; i < index.length; i += 3) {
+      (uv.getX(index[i]) > 0.9 ? lens : frame).push(index[i], index[i + 1], index[i + 2]);
+    }
+    geo.setIndex([...frame, ...lens]);
+    geo.clearGroups();
+    geo.addGroup(0, frame.length, 0);
+    geo.addGroup(frame.length, lens.length, 1);
+    o.geometry = geo;
+    // the lenses have no rims of their own: ring each one in the frame colour
+    const pos = geo.attributes.position;
+    for (const side of [-1, 1]) {
+      const pts = [...new Set(lens)].filter((i) => Math.sign(pos.getX(i)) === side);
+      if (!pts.length) continue;
+      const c = new Vector3();
+      for (const i of pts) c.add(new Vector3(pos.getX(i), pos.getY(i), pos.getZ(i)));
+      c.divideScalar(pts.length);
+      let radius = 0;
+      let front = -Infinity;
+      for (const i of pts) {
+        radius = Math.max(radius, Math.hypot(pos.getX(i) - c.x, pos.getY(i) - c.y));
+        front = Math.max(front, pos.getZ(i));
+      }
+      const rim = new Mesh(new TorusGeometry(radius, 0.0095, 4, 8), frameMaterial);
+      rim.rotation.z = Math.PI / 8;
+      rim.position.set(c.x, c.y, front);
+      o.add(rim);
+    }
+    o.material = [
+      frameMaterial,
+      new MeshStandardMaterial({
+        color: '#d9ecff', roughness: 0.05, transparent: true, opacity: 0.22, depthWrite: false,
+      }),
+    ];
+    o.castShadow = false;
+  });
+  return root;
+}
 
 async function start() {
   const canvas = document.querySelector('[data-world]');
@@ -105,6 +158,14 @@ async function start() {
   const home = STOPS.home;
   const actor = new Actor(M.avatar, clips);
   scene.add(actor.root);
+  // his glasses (Kenney's, made for these characters), on the head bone
+  const head = actor.bone('head');
+  if (head) {
+    const glasses = eyeglasses(M.glasses);
+    glasses.position.set(0, GLASSES.y, GLASSES.z);
+    glasses.scale.setScalar(GLASSES.scale);
+    head.add(glasses);
+  }
   const player = new Player(actor, world, { x: home.x, z: home.z, face: home.face });
   world.dynamic.push(player.body);
   refs.player = player.position; // cars brake for him (and for his car)
@@ -210,6 +271,7 @@ async function start() {
       if (airport === 'dubai') {
         stations.landed = true;
         stations.startArrivals();
+        refs.crowd.cheer(9);
       }
     },
   });
@@ -546,7 +608,7 @@ async function start() {
     }
     player.update(dt, keys, rig);
     refs.worker.update(dt);
-    refs.recruiter.update(dt);
+    refs.crowd.update(dt, player.position);
     aircraft.update(dt, keys);
     if (mode === 'fly') player.root.position.copy(aircraft.position).y = 0;
     stations.update(t, dt);
@@ -575,6 +637,10 @@ async function start() {
   }
   ui.ready();
   ui.card(stations.stops[0]);
+  // the Dubai crowd's models come down in the background
+  loadLater()
+    .then((L) => refs.crowd.populate([L.maleA, L.femaleA, M.femaleB, L.maleG, L.femaleC, L.maleB, M.worker, L.maleE], clips, { few: coarse }))
+    .catch((error) => console.warn('Crowd models failed to load', error));
   return null;
 }
 

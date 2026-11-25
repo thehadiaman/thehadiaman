@@ -10,7 +10,8 @@ const BASE = 'assets/models/';
 
 export const MODELS = {
   avatar: 'characters/character-male-f.glb',
-  recruiter: 'characters/character-female-b.glb',
+  femaleB: 'characters/character-female-b.glb',
+  glasses: 'characters/aid-glasses.glb',
   worker: 'characters/character-worker.glb',
   luggage: 'characters/item-luggage-upright.glb',
   robot: 'characters/character-robot.glb',
@@ -85,6 +86,29 @@ export async function loadModels(manager) {
   const loader = new GLTFLoader(manager);
   const entries = await Promise.all(
     Object.entries(MODELS).map(async ([key, path]) => {
+      const gltf = await loader.loadAsync(BASE + path);
+      tidy(gltf.scene);
+      return [key, gltf];
+    }),
+  );
+  return Object.fromEntries(entries);
+}
+
+// Models that aren't needed straight away (the Dubai crowd): loaded in the
+// background once the world is up.
+export const LATER = {
+  femaleA: 'characters/character-female-a.glb',
+  femaleC: 'characters/character-female-c.glb',
+  maleA: 'characters/character-male-a.glb',
+  maleB: 'characters/character-male-b.glb',
+  maleE: 'characters/character-male-e.glb',
+  maleG: 'characters/character-male-g.glb',
+};
+
+export async function loadLater() {
+  const loader = new GLTFLoader();
+  const entries = await Promise.all(
+    Object.entries(LATER).map(async ([key, path]) => {
       const gltf = await loader.loadAsync(BASE + path);
       tidy(gltf.scene);
       return [key, gltf];
