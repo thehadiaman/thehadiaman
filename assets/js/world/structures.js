@@ -2,7 +2,8 @@
 // GDS mast out at sea, the Redis cabinet, a Dubai supertall and street lamps.
 import {
   Group, Mesh, BoxGeometry, CylinderGeometry, IcosahedronGeometry, SphereGeometry,
-  MeshStandardMaterial, Vector3, Sprite, SpriteMaterial, CanvasTexture, AdditiveBlending,
+  MeshStandardMaterial, MeshBasicMaterial, PlaneGeometry, Vector3, Sprite, SpriteMaterial,
+  CanvasTexture, AdditiveBlending, RepeatWrapping, SRGBColorSpace, mergeGeometries,
 } from '../../vendor/three.min.js';
 import { label, Panel, text, FONTS, roundRect } from './canvasart.js';
 
@@ -182,15 +183,55 @@ export function createRedisCabinet(x, z, rot = 0) {
   };
 }
 
-// A generic stepped supertall for the Dubai skyline.
+// Office windows for the supertall: a few floors' worth, some left on late.
+function windowTexture() {
+  const c = document.createElement('canvas');
+  c.width = 128;
+  c.height = 256;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, 128, 256);
+  let seed = 5;
+  const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  for (let row = 0; row < 16; row++) {
+    // whole floors tend to be on or off together, as in a real office tower
+    const floor = rand();
+    for (let col = 0; col < 6; col++) {
+      if (rand() > (floor > 0.45 ? 0.82 : 0.12)) continue;
+      const warm = 70 + rand() * 40;
+      ctx.fillStyle = `hsl(${36 + rand() * 10}, 90%, ${warm}%)`;
+      ctx.fillRect(5 + col * 20.5, row * 16 + 4, 15, 9);
+    }
+  }
+  const tex = new CanvasTexture(c);
+  tex.wrapS = RepeatWrapping;
+  tex.wrapT = RepeatWrapping;
+  tex.colorSpace = SRGBColorSpace;
+  return tex;
+}
+
+// A generic stepped supertall for the Dubai skyline. Its windows light up at
+// night, and a red light blinks on the spire.
 export function createSupertall(x, z) {
   const group = new Group();
   const tiers = [
     [9, 46], [7.4, 40], [5.8, 34], [4.3, 26], [3, 20], [1.8, 14],
   ];
+  const windows = windowTexture();
+  const lit = [glass, darkGlass].map((m) => {
+    const mat = m.clone();
+    mat.emissive.set('#ffffff');
+    mat.emissiveMap = windows;
+    mat.emissiveIntensity = 0;
+    return mat;
+  });
   let y = 0;
   tiers.forEach(([r, h], i) => {
-    const t = new Mesh(new CylinderGeometry(r * 0.86, r, h, 6), i % 2 ? glass : darkGlass);
+    const geo = new CylinderGeometry(r * 0.86, r, h, 6);
+    // one window tile per face, floors about 3 m apart
+    const uv = geo.attributes.uv;
+    for (let k = 0; k < uv.count; k++) uv.setXY(k, uv.getX(k) * 6, (uv.getY(k) * h) / 48 + i * 0.37);
+    const t = new Mesh(geo, lit[i % 2]);
     t.position.y = y + h / 2;
     t.rotation.y = i * 0.18;
     t.castShadow = true;
@@ -200,8 +241,24 @@ export function createSupertall(x, z) {
   const spire = new Mesh(new CylinderGeometry(0.15, 1.2, 26, 6), steel);
   spire.position.y = y + 13;
   group.add(spire);
+  const beaconMat = new MeshBasicMaterial({ color: '#ff3b2f', fog: false });
+  const beacon = new Mesh(new SphereGeometry(0.7, 10, 8), beaconMat);
+  beacon.position.y = y + 26.4;
+  beacon.visible = false;
+  group.add(beacon);
   group.position.set(x, 0, z);
-  return { group, collider: { x0: x - 9, x1: x + 9, z0: z - 9, z1: z + 9, top: 210 } };
+  let level = 0;
+  return {
+    group,
+    collider: { x0: x - 9, x1: x + 9, z0: z - 9, z1: z + 9, top: 210 },
+    night(l) {
+      level = l;
+      for (const m of lit) m.emissiveIntensity = l * 1.4;
+    },
+    update(t) {
+      beacon.visible = level > 0.3 && t % 1.6 < 0.25;
+    },
+  };
 }
 
 let glowTexture = null;
@@ -221,29 +278,82 @@ function glow() {
   return glowTexture;
 }
 
-// Street lamp whose bulb can be switched on.
+// Street lamp. Its bulb is lit by whichever asks for more: the story (the
+// college lamps switch on as you arrive) or the night.
+const lampPost = new MeshStandardMaterial({ color: '#33363c', roughness: 0.6 });
+let postGeometry = null;
+let poolTexture = null;
+function lampPool() {
+  if (poolTexture) return poolTexture;
+  const c = document.createElement('canvas');
+  c.width = 128;
+  c.height = 128;
+  const ctx = c.getContext('2d');
+  const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  g.addColorStop(0, 'rgba(255,214,140,0.9)');
+  g.addColorStop(0.45, 'rgba(255,196,110,0.35)');
+  g.addColorStop(1, 'rgba(255,190,100,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 128, 128);
+  poolTexture = new CanvasTexture(c);
+  return poolTexture;
+}
+
 export function createLamp(x, z) {
   const group = new Group();
-  const pole = new Mesh(new CylinderGeometry(0.08, 0.11, 4.6, 8), new MeshStandardMaterial({ color: '#33363c', roughness: 0.6 }));
-  pole.position.y = 2.3;
-  const arm = box(0.9, 0.08, 0.08, pole.material, 0.4, 4.55, 0);
+  if (!postGeometry) {
+    const pole = new CylinderGeometry(0.08, 0.11, 4.6, 8).translate(0, 2.3, 0);
+    const arm = new BoxGeometry(0.9, 0.08, 0.08).translate(0.4, 4.55, 0);
+    postGeometry = mergeGeometries([pole.toNonIndexed(), arm.toNonIndexed()]);
+  }
+  const post = new Mesh(postGeometry, lampPost);
+  post.castShadow = true;
   const bulbMat = new MeshStandardMaterial({ color: '#fff4d6', emissive: '#ffd27a', emissiveIntensity: 0 });
   const bulb = new Mesh(new SphereGeometry(0.22, 12, 8), bulbMat);
   bulb.position.set(0.8, 4.4, 0);
   const halo = new Sprite(new SpriteMaterial({
-    map: glow(), blending: AdditiveBlending, depthWrite: false, transparent: true, opacity: 0,
+    map: glow(), blending: AdditiveBlending, depthWrite: false, transparent: true, opacity: 0, fog: false,
   }));
   halo.position.copy(bulb.position);
   halo.scale.setScalar(2.6);
-  group.add(pole, arm, bulb, halo);
+  // the warm circle it throws on the ground
+  const pool = new Mesh(new PlaneGeometry(9, 9), new MeshBasicMaterial({
+    map: lampPool(), blending: AdditiveBlending, depthWrite: false, transparent: true, opacity: 0,
+    polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
+  }));
+  pool.rotation.x = -Math.PI / 2;
+  pool.position.set(0.8, 0.05, 0);
+  pool.renderOrder = 1;
+  halo.visible = false;
+  pool.visible = false;
+  group.add(post, bulb, halo, pool);
   group.position.set(x, 0, z);
-  pole.castShadow = true;
+  let story = 0;
+  let night = 0;
+  const show = () => {
+    const level = Math.max(story, night);
+    bulbMat.emissiveIntensity = level * 3;
+    halo.material.opacity = level * 0.9;
+    halo.visible = level > 0.01;
+    // the pool only shows once it's dark enough to see it
+    pool.material.opacity = night * 0.55;
+    pool.visible = night > 0.01;
+  };
   return {
     group,
+    bulb,
     collider: { x0: x - 0.3, x1: x + 0.3, z0: z - 0.3, z1: z + 0.3 },
+    get level() {
+      return Math.max(story, night);
+    },
     set(level) {
-      bulbMat.emissiveIntensity = level * 3;
-      halo.material.opacity = level * 0.9;
+      story = level;
+      show();
+    },
+    night(level) {
+      if (Math.abs(level - night) < 0.004) return;
+      night = level;
+      show();
     },
   };
 }

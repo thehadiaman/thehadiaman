@@ -90,7 +90,6 @@ export class Stations {
         screen.mesh.visible = true;
         this.tween(0.6, (k) => screen.mesh.scale.setScalar(Math.max(0.01, 1 - (1 - k) ** 3)));
         this.tween(1.8, (k) => screen.refresh(k), 0.3);
-        this.ui.prompt('Sit at the desk', () => this.sitAtDesk());
         break;
       }
       case 'nucore':
@@ -126,9 +125,6 @@ export class Stations {
         this.startDepartures();
         this.after(1.2, () => this.startRace());
         break;
-      case 'gate':
-        this.ui.prompt('Board the flight to Dubai', () => this.onBoard?.());
-        break;
       case 'dubai':
         this.startArrivals();
         this.after(0.6, () => {
@@ -140,15 +136,8 @@ export class Stations {
     }
   }
 
-  leave(stop) {
-    if (stop.id === 'freelance' || stop.id === 'gate') this.ui.prompt(null);
+  leave() {
     this.ui.card(null);
-  }
-
-  sitAtDesk() {
-    const d = this.refs.desk;
-    this.player.sit(d.x, d.z, d.rot);
-    this.ui.prompt(null);
   }
 
   startDepartures(at = performance.now()) {

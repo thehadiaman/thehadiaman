@@ -12,7 +12,7 @@ import {
 import { createPlane, createStairs } from './plane.js';
 import { createFlapBoard } from './flapboard.js';
 import { Actor } from './actors.js';
-import { KERALA, LAGOON, BRIDGE, STOPS, PLACES } from './layout.js';
+import { KERALA, LAGOON, BRIDGE, STOPS, PLACES, VEHICLES } from './layout.js';
 import { inside, SEA_LEVEL } from './terrain.js';
 import { rng, bridgeHeight } from './world.js';
 import { ROADS, alongRoad } from './roads.js';
@@ -73,6 +73,17 @@ export function windPatch(material, { sway = true } = {}) {
 }
 export const stillPatch = (material) => windPatch(material, { sway: false });
 
+// A post with a TAXI sign, for the taxi stands.
+export function taxiSign() {
+  const group = new Group();
+  const sign = label('TAXI', { height: 0.6, color: '#1b1d21', bg: '#f3aa1c', tracking: 0.12, pad: 0.2 });
+  sign.mesh.position.y = 2.5;
+  const post = new Mesh(new CylinderGeometry(0.05, 0.05, 2.5, 8), rubber);
+  post.position.y = 1.25;
+  group.add(sign.mesh, post);
+  return group;
+}
+
 export function faceToward(obj, x, z) {
   obj.rotation.y = Math.atan2(x - obj.position.x, z - obj.position.z);
 }
@@ -111,13 +122,19 @@ export function buildKerala({ scene, M, world, glyphs, clips }) {
   solid(place(M.houseB, { x: 30, z: 108, rot: -Math.PI / 2, scale: 6.5 }));
   solid(place(M.houseB, { x: -34, z: 100, rot: Math.PI / 2, scale: 6.5 }));
   solid(place(M.houseA, { x: 44, z: 82, rot: -Math.PI / 2, scale: 6.5 }));
-  solid(place(M.sedan, { x: 1, z: 113, rot: Math.PI / 2, scale: 1.25 }), 0.1);
   scene.add(scatter(M.planter, [
     { x: -2.5, z: 99, scale: 3 }, { x: -2.5, z: 109, scale: 3 }, { x: 24, z: 104, scale: 3, rot: Math.PI / 2 },
   ]));
   addSign(scene, world, 'home', {
     number: 1, title: 'Kozhikode, Kerala', sub: 'Home. Where the route starts.',
   });
+
+  const taxiStand = taxiSign();
+  // behind the waiting taxi, out of its way
+  taxiStand.position.set(VEHICLES.taxiKerala.x + 1.9, 0, VEHICLES.taxiKerala.z + 3.4);
+  taxiStand.rotation.y = Math.PI * 0.85;
+  scene.add(taxiStand);
+  world.circle(taxiStand.position.x, taxiStand.position.z, 0.3);
 
   /* ------------------------------------------------ 02 college */
   solid(place(M.officeE, { x: PLACES.college.x, z: PLACES.college.z, rot: PLACES.college.rot, scale: 9 }));
@@ -175,6 +192,7 @@ export function buildKerala({ scene, M, world, glyphs, clips }) {
       world.box(lamp.collider);
       return lamp;
     });
+  refs.streetLamps.push(...refs.lamps);
 
   /* ------------------------------------------------ 03 freelance desk */
   const desk = new Group();
@@ -493,11 +511,7 @@ export function buildKerala({ scene, M, world, glyphs, clips }) {
   faceToward(small, -30, -38);
   scene.add(small);
   world.circle(-38, -48, 1.1);
-  scene.add(scatter(M.bench, [
-    { x: -33, z: -45, rot: -0.6, scale: 3 }, { x: -44, z: -30, rot: 2.6, scale: 3 },
-  ]));
-  world.circle(-33, -45, 1);
-  world.circle(-44, -30, 1);
+  addBenches(scene, world, M, [{ x: -33, z: -45, rot: -0.6 }, { x: -44, z: -30, rot: 2.6 }]);
   addSign(scene, world, 'projects', {
     number: 5, title: 'Side projects', sub: 'WhatsApp AI desk · PDF Q&A · Android',
   });
@@ -594,6 +608,9 @@ export function buildKerala({ scene, M, world, glyphs, clips }) {
     { x: PLACES.projects.x, z: PLACES.projects.z, r: 12 },
     { x: 40, z: 2, r: 13 }, // migration yard
     { x: -42, z: 44, r: 5 },
+    // parking: the car at home and the taxi stand
+    { x: VEHICLES.carKerala.x, z: VEHICLES.carKerala.z, r: 5.5 },
+    { x: VEHICLES.taxiKerala.x, z: VEHICLES.taxiKerala.z, r: 6 },
   ];
   // keep the arrival camera's line of sight clear at every stop
   const camOut = Object.values(STOPS).flatMap((s) => [
@@ -802,4 +819,26 @@ function paintDiet(ctx, w, h) {
     text(ctx, row, w * 0.13, h * (0.6 + i * 0.1), { cap: h * 0.022, font: FONTS.sans, weight: 600, color: '#1b1d21' });
   });
   text(ctx, 'Kotlin · multi-module Gradle', w / 2, h * 0.93, { cap: h * 0.018, font: FONTS.sans, weight: 500, color: '#8a8d93', align: 'center' });
+}
+
+// Park benches you can sit on. Kenney's bench has its origin at a back corner
+// (1.2 × 0.6 m at this scale, backrest along local −z), so work out its middle,
+// make it solid there, and note where Hadi sits and where he stands up to.
+export const BENCH_SCALE = 3;
+export function addBenches(scene, world, M, list) {
+  scene.add(scatter(M.bench, list.map((b) => ({ ...b, scale: BENCH_SCALE }))));
+  for (const { x, z, rot } of list) {
+    const c = Math.cos(rot);
+    const s = Math.sin(rot);
+    // local (lx, lz) → world, for a rotation of rot about y
+    const at = (lx, lz) => [x + lx * c + lz * s, z - lx * s + lz * c];
+    const [cx, cz] = at(0.6, -0.3);
+    for (const k of [-0.32, 0.32]) {
+      const [px, pz] = at(0.6 + k, -0.3);
+      world.circle(px, pz, 0.42);
+    }
+    const [sx, sz] = at(0.6, -0.26);
+    const [ux, uz] = at(0.6, 0.75);
+    world.refs.benches.push({ x: cx, z: cz, face: rot, seat: [sx, sz], up: [ux, uz] });
+  }
 }

@@ -6,11 +6,14 @@ const MOVE = {
   KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right',
 };
 
+const _look = new Vector3();
+
 export class Keys {
   constructor() {
     this.held = new Set();
     this.handlers = new Map();
     this.enabled = true;
+    this.stick = { x: 0, y: 0 }; // on-screen joystick, −1…1
     window.addEventListener('keydown', (e) => {
       const t = e.target;
       if (t.closest?.('input, textarea, select, [contenteditable]')) return;
@@ -22,6 +25,7 @@ export class Keys {
         if (e.code.startsWith('Arrow')) e.preventDefault();
         return;
       }
+      if (e.code === 'Space') this.held.add('brake');
       const fn = this.handlers.get(e.code);
       if (fn && this.enabled && !e.repeat) {
         e.preventDefault();
@@ -31,6 +35,7 @@ export class Keys {
     window.addEventListener('keyup', (e) => {
       if (MOVE[e.code]) this.held.delete(MOVE[e.code]);
       if (e.code.startsWith('Shift')) this.held.delete('run');
+      if (e.code === 'Space') this.held.delete('brake');
     });
     window.addEventListener('blur', () => this.held.clear());
   }
@@ -40,19 +45,34 @@ export class Keys {
   }
 
   get forward() {
-    return (this.held.has('up') ? 1 : 0) - (this.held.has('down') ? 1 : 0);
+    const k = (this.held.has('up') ? 1 : 0) - (this.held.has('down') ? 1 : 0);
+    return k || (Math.abs(this.stick.y) > 0.15 ? -this.stick.y : 0);
   }
 
   get strafe() {
-    return (this.held.has('right') ? 1 : 0) - (this.held.has('left') ? 1 : 0);
+    const k = (this.held.has('right') ? 1 : 0) - (this.held.has('left') ? 1 : 0);
+    return k || (Math.abs(this.stick.x) > 0.15 ? this.stick.x : 0);
   }
 
   get run() {
     return this.held.has('run');
   }
+
+  get brake() {
+    return this.held.has('brake');
+  }
+
+  // Is any steering input being given right now?
+  get steering() {
+    return Boolean(this.forward || this.strafe);
+  }
 }
 
 // Third-person camera. Drag to orbit, wheel or pinch to zoom, tap to walk.
+// Dragging down past LOW brings the camera in behind his shoulder and tilts the
+// view up, all the way to looking at the sky at LOOK_UP.
+const LOW = 0.1;
+const LOOK_UP = -1.05;
 export class CameraRig {
   constructor(camera, dom, { onTap, reducedMotion = false } = {}) {
     this.camera = camera;
@@ -66,6 +86,7 @@ export class CameraRig {
     this.reducedMotion = reducedMotion;
     this.pointers = new Map();
     this.dragged = false;
+    this.lastDrag = 0;
     this.pinch = 0;
 
     dom.addEventListener('pointerdown', (e) => {
@@ -89,9 +110,10 @@ export class CameraRig {
         return;
       }
       if (Math.hypot(e.clientX - p.sx, e.clientY - p.sy) > 6) this.dragged = true;
+      if (this.dragged) this.lastDrag = performance.now();
       if (this.dragged && !this.override) {
         this.yaw -= dx * 0.0055;
-        this.pitch = Math.min(1.25, Math.max(0.12, this.pitch + dy * 0.004));
+        this.pitch = Math.min(1.25, Math.max(LOOK_UP, this.pitch + dy * 0.004));
       }
     });
     const end = (e) => {
@@ -130,16 +152,28 @@ export class CameraRig {
     this.apply();
   }
 
+  // How far below LOW the view is tilted: 0 (normal) … 1 (straight at the sky).
+  get upness() {
+    return Math.min(1, Math.max(0, (LOW - this.pitch) / (LOW - LOOK_UP)));
+  }
+
+  // The arm never dips below LOW; it shortens as you look up.
+  get arm() {
+    const up = this.upness;
+    return { pitch: Math.max(LOW, this.pitch), length: this.distance * (1 - 0.62 * Math.sqrt(up)) };
+  }
+
   // Walk out along the camera arm; stop short of the first building in the way.
   clearance() {
-    if (!this.blocked) return this.distance;
-    const dx = Math.sin(this.yaw) * Math.cos(this.pitch);
-    const dy = Math.sin(this.pitch);
-    const dz = Math.cos(this.yaw) * Math.cos(this.pitch);
-    for (let d = 1.5; d <= this.distance; d += 0.5) {
+    const { pitch, length } = this.arm;
+    if (!this.blocked) return length;
+    const dx = Math.sin(this.yaw) * Math.cos(pitch);
+    const dy = Math.sin(pitch);
+    const dz = Math.cos(this.yaw) * Math.cos(pitch);
+    for (let d = 1.5; d <= length; d += 0.5) {
       if (this.blocked(this.focus.x + dx * d, this.focus.y + dy * d, this.focus.z + dz * d)) return Math.max(2.5, d - 0.8);
     }
-    return this.distance;
+    return length;
   }
 
   apply(dt = 1) {
@@ -147,14 +181,31 @@ export class CameraRig {
     // pull in quickly, ease back out slowly
     const k = want < this.reach ? 1 - Math.exp(-dt * 18) : 1 - Math.exp(-dt * 2.5);
     this.reach += (want - this.reach) * (dt >= 1 ? 1 : k);
-    const h = this.reach * Math.cos(this.pitch);
-    const v = this.reach * Math.sin(this.pitch);
-    this.camera.position.set(
+    const { pitch } = this.arm;
+    const h = this.reach * Math.cos(pitch);
+    const v = this.reach * Math.sin(pitch);
+    const cam = this.camera.position.set(
       this.focus.x + Math.sin(this.yaw) * h,
       this.focus.y + v,
       this.focus.z + Math.cos(this.yaw) * h,
     );
-    this.camera.lookAt(this.focus);
+    const up = this.upness;
+    if (up <= 0) {
+      this.camera.lookAt(this.focus);
+      return;
+    }
+    // looking up: aim past him, raising the gaze from "at him" towards the zenith
+    const fx = this.focus.x - cam.x;
+    const fz = this.focus.z - cam.z;
+    const flat = Math.hypot(fx, fz) || 1;
+    const base = Math.atan2(this.focus.y - cam.y, flat);
+    const tilt = base + (1.32 - base) * up;
+    _look.set(
+      cam.x + (fx / flat) * Math.cos(tilt),
+      cam.y + Math.sin(tilt),
+      cam.z + (fz / flat) * Math.cos(tilt),
+    );
+    this.camera.lookAt(_look);
   }
 
   update(dt, target) {
@@ -165,5 +216,55 @@ export class CameraRig {
     const k = this.reducedMotion ? 1 : 1 - Math.exp(-dt * 7);
     this.focus.lerp(target, k);
     this.apply(dt);
+  }
+}
+
+// A thumb stick for phones: drag inside the ring; writes −1…1 into keys.stick.
+export class Stick {
+  constructor(el, keys) {
+    this.el = el;
+    this.knob = el.querySelector('span');
+    this.keys = keys;
+    this.id = null;
+    const move = (e) => {
+      const r = el.getBoundingClientRect();
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      const max = r.width / 2;
+      let dx = (e.clientX - cx) / max;
+      let dy = (e.clientY - cy) / max;
+      const len = Math.hypot(dx, dy);
+      if (len > 1) {
+        dx /= len;
+        dy /= len;
+      }
+      keys.stick.x = dx;
+      keys.stick.y = dy;
+      this.knob.style.transform = `translate(${dx * max * 0.6}px, ${dy * max * 0.6}px)`;
+    };
+    el.addEventListener('pointerdown', (e) => {
+      this.id = e.pointerId;
+      el.setPointerCapture(e.pointerId);
+      move(e);
+    });
+    el.addEventListener('pointermove', (e) => e.pointerId === this.id && move(e));
+    const end = (e) => {
+      if (e.pointerId !== this.id) return;
+      this.id = null;
+      keys.stick.x = 0;
+      keys.stick.y = 0;
+      this.knob.style.transform = '';
+    };
+    el.addEventListener('pointerup', end);
+    el.addEventListener('pointercancel', end);
+  }
+
+  show(on) {
+    this.el.hidden = !on;
+    if (!on) {
+      this.keys.stick.x = 0;
+      this.keys.stick.y = 0;
+      this.knob.style.transform = '';
+    }
   }
 }

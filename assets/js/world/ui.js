@@ -6,7 +6,7 @@ const $ = (sel) => document.querySelector(sel);
 const v = new Vector3();
 
 export class UI {
-  constructor({ onChapter, onNext, onAction }) {
+  constructor({ onChapter, onNext, onAction, onFly, onHold, onExit, onTime }) {
     this.cardEl = $('[data-card]');
     this.promptEl = $('[data-prompt]');
     this.fadeEl = $('[data-fade]');
@@ -16,6 +16,30 @@ export class UI {
     this.onAction = onAction;
     this.current = -1;
     this.floats = new Set();
+
+    // flight panel
+    this.flightEl.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-fly]');
+      if (b) onFly(b.dataset.fly);
+    });
+    for (const b of this.flightEl.querySelectorAll('[data-hold]')) {
+      const set = (on) => () => onHold(b.dataset.hold, on);
+      b.addEventListener('pointerdown', set(true));
+      b.addEventListener('pointerup', set(false));
+      b.addEventListener('pointerleave', set(false));
+      b.addEventListener('pointercancel', set(false));
+    }
+    // driving panel
+    this.driveEl = $('[data-drive]');
+    this.driveEl.querySelector('[data-exit]').addEventListener('click', () => onExit());
+    // destination picker
+    this.pickerEl = $('[data-picker]');
+    // the clock: shows the world's time, and swaps day for night
+    this.timeEl = $('[data-time]');
+    this.timeText = this.timeEl.querySelector('[data-time-text]');
+    this.timeLabel = this.timeEl.querySelector('[data-time-label]');
+    this.timeEl.addEventListener('click', () => onTime?.());
+    this.shownTime = '';
 
     // chapter bar
     const list = $('[data-chapters]');
@@ -119,6 +143,11 @@ export class UI {
   }
 
   prompt(textValue, fn) {
+    if (textValue === this.promptText) {
+      this.promptFn = fn;
+      return;
+    }
+    this.promptText = textValue;
     if (!textValue) {
       this.promptEl.hidden = true;
       this.promptFn = null;
@@ -127,20 +156,99 @@ export class UI {
     this.promptFn = fn;
     this.promptEl.hidden = false;
     this.promptEl.innerHTML = `<button type="button"><kbd>E</kbd> ${textValue}</button>`;
-    this.promptEl.querySelector('button').addEventListener('click', () => fn());
+    this.promptEl.querySelector('button').addEventListener('click', () => this.promptFn?.());
   }
 
   triggerPrompt() {
     this.promptFn?.();
   }
 
-  flightBanner(on, onSkip) {
-    this.flightEl.hidden = !on;
-    document.body.classList.toggle('is-flying', on);
-    if (on) {
-      const skip = this.flightEl.querySelector('button');
-      skip.onclick = () => onSkip();
+  // The flight panel. state: { mode, dest, alt, speed, onGround, banner } or null to hide.
+  // Shown to the nearest ten minutes, so it ticks over calmly.
+  clock(hour, night) {
+    const total = Math.floor((hour * 60) / 10) * 10;
+    const text = `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+    if (text + night === this.shownTime) return;
+    this.shownTime = text + night;
+    this.timeText.textContent = text;
+    this.timeEl.classList.toggle('is-night', night);
+    this.timeLabel.textContent = night ? ', switch to day' : ', switch to night';
+  }
+
+  flight(state) {
+    const el = this.flightEl;
+    el.hidden = !state;
+    document.body.classList.toggle('is-flying', Boolean(state));
+    if (!state) return;
+    const q = (sel) => el.querySelector(sel);
+    const labels = { auto: 'Autopilot', manual: 'Manual', rescue: 'Rescue', rollout: 'Landed' };
+    q('[data-fmode]').textContent = labels[state.mode] ?? state.mode;
+    q('[data-fmode]').dataset.mode = state.mode;
+    q('[data-froute]').textContent = state.mode === 'manual' ? 'you have the controls' : `to ${state.dest}`;
+    q('[data-falt]').textContent = state.alt;
+    q('[data-fspd]').textContent = state.speed;
+    const show = (sel, on) => (q(sel).hidden = !on);
+    show('[data-fly="control"]', state.mode === 'auto');
+    q('[data-fly="control"]').disabled = Boolean(state.onGround);
+    show('[data-fly="auto-dubai"]', state.mode === 'manual');
+    show('[data-fly="auto-kerala"]', state.mode === 'manual');
+    show('[data-fly="skip"]', state.mode === 'auto');
+    for (const b of el.querySelectorAll('[data-hold]')) b.hidden = state.mode !== 'manual';
+    const touch = document.body.classList.contains('is-touch');
+    q('[data-fhelp]').textContent = state.mode === 'manual'
+      ? (touch ? 'Stick: climb, dive, bank. Land gently on a runway, or hand back to autopilot.' : '↑ ↓ climb and dive · ← → bank · Shift faster · Space slower · land gently on a runway')
+      : state.mode === 'auto' ? (touch ? 'Use the stick to fly it yourself.' : 'Press any arrow key to fly it yourself.') : '';
+    if (state.banner) {
+      const b = q('[data-fbanner]');
+      b.textContent = state.banner;
+      b.hidden = false;
+      clearTimeout(this.bannerTimer);
+      this.bannerTimer = setTimeout(() => (b.hidden = true), 2600);
     }
+  }
+
+  // The driving panel. state: { kind: 'drive' | 'taxi', speed, dest } or null.
+  drive(state) {
+    const el = this.driveEl;
+    el.hidden = !state;
+    document.body.classList.toggle('is-driving', Boolean(state));
+    if (!state) return;
+    el.querySelector('[data-dwhat]').textContent = state.kind === 'taxi'
+      ? (state.dest ? `Taxi to ${state.dest}` : 'Taxi')
+      : 'Driving';
+    el.querySelector('[data-dspeed]').textContent = Math.round(Math.abs(state.speed ?? 0) * 3.6);
+    el.querySelector('[data-dhelp]').hidden = state.kind !== 'drive' || document.body.classList.contains('is-touch');
+  }
+
+  // Ask where to go. Resolves with the chosen index, or null.
+  pick(title, options) {
+    const el = this.pickerEl;
+    el.querySelector('[data-ptitle]').textContent = title;
+    const list = el.querySelector('[data-plist]');
+    list.replaceChildren();
+    el.hidden = false;
+    return new Promise((resolve) => {
+      const done = (value) => {
+        el.hidden = true;
+        window.removeEventListener('keydown', onKey);
+        this.cancelPick = null;
+        resolve(value);
+      };
+      const onKey = (e) => e.key === 'Escape' && done(null);
+      window.addEventListener('keydown', onKey);
+      options.forEach((name, i) => {
+        const li = document.createElement('li');
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = name;
+        b.addEventListener('click', () => done(i));
+        li.append(b);
+        list.append(li);
+      });
+      el.querySelector('[data-pcancel]').onclick = () => done(null);
+      list.querySelector('button')?.focus();
+      this.cancelPick = () => done(null);
+    });
   }
 
   toast(message) {

@@ -20,6 +20,8 @@ export class Player {
     this.arrive = null;
     this.locked = false;
     this.sitting = false;
+    this.seatLift = 0;
+    this.standUpTo = null;
     this.busyUntil = 0; // a one-off animation (nod, pick up) is playing
     this.y = 0;
     this.vy = 0;
@@ -29,6 +31,11 @@ export class Player {
     this.onStuck = null;
     this.faceTo = null; // a direction to turn to once standing still
     this.time = 0;
+    // Hadi as an obstacle for cars (only while he's on foot)
+    this.body = {
+      hits: (x, z, r) => this.root.visible && !this.locked
+        && Math.hypot(x - this.root.position.x, z - this.root.position.z) < r + 0.4,
+    };
     this.teleport(x, z, face);
     actor.play('idle');
   }
@@ -46,6 +53,8 @@ export class Player {
     this.stop();
     this.faceTo = null;
     this.sitting = false;
+    this.seatLift = 0;
+    this.standUpTo = null;
     this.heading = face;
     this.y = this.world.heightAt(x, z);
     this.root.position.set(x, this.y, z);
@@ -81,19 +90,32 @@ export class Player {
     this.busyUntil = this.time + seconds;
   }
 
-  sit(x, z, face) {
+  // Sit down at (x, z) facing `face`. `lift` raises him onto a taller seat;
+  // `up` is where he steps to when he stands (clear of the seat's collider).
+  sit(x, z, face, { lift = 0, up = null } = {}) {
     this.stop();
-    this.root.position.set(x, 0, z);
+    this.faceTo = null;
+    this.root.position.x = x;
+    this.root.position.z = z;
     this.heading = face;
     this.root.rotation.y = face;
     this.speed = 0;
     this.sitting = true;
+    this.seatLift = lift;
+    this.standUpTo = up;
     this.actor.play('sit', { fade: 0.35 });
   }
 
   stand() {
     if (!this.sitting) return;
     this.sitting = false;
+    this.seatLift = 0;
+    if (this.standUpTo) {
+      const [x, z] = this.standUpTo;
+      this.standUpTo = null;
+      this.root.position.x = x;
+      this.root.position.z = z;
+    }
     this.actor.play('idle', { fade: 0.3 });
   }
 
@@ -190,7 +212,8 @@ export class Player {
         this.airborne = false;
       }
     } else {
-      this.y += (ground - this.y) * Math.min(1, dt * 14);
+      const want = ground + (this.sitting ? this.seatLift : 0);
+      this.y += (want - this.y) * Math.min(1, dt * (this.sitting ? 8 : 14));
     }
     pos.y = this.y;
     this.root.rotation.y = this.heading;
@@ -217,7 +240,7 @@ export class Player {
       const k = distance * Math.max(0.35, Math.cos(a));
       const nx = pos.x + rx * k;
       const nz = pos.z + rz * k;
-      if (!this.world.blocked(nx, nz)) {
+      if (!this.world.blocked(nx, nz, 0.35, false, this.body)) {
         pos.x = nx;
         pos.z = nz;
         if (a0) this.side = Math.sign(a);

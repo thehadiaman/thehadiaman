@@ -19,16 +19,19 @@ const ZENITH = new Color('#7fb2e6');
 
 export function createSky(scene) {
   scene.fog = new Fog(HORIZON.clone(), 160, 820);
+  const uniforms = {
+    uTop: { value: ZENITH.clone() },
+    uHorizon: { value: HORIZON.clone() },
+    uBelow: { value: new Color('#9fc7c9') },
+    uSunDir: { value: new Vector3(-0.45, 0.62, 0.64).normalize() },
+    uGlow: { value: new Color('#ffeed0') }, // haze around the sun (orange at dusk)
+    uGlowSize: { value: 10 },
+  };
   const material = new ShaderMaterial({
     side: BackSide,
     depthWrite: false,
     fog: false,
-    uniforms: {
-      uTop: { value: ZENITH.clone() },
-      uHorizon: { value: HORIZON.clone() },
-      uBelow: { value: new Color('#9fc7c9') },
-      uSunDir: { value: new Vector3(-0.45, 0.62, 0.64).normalize() },
-    },
+    uniforms,
     vertexShader: `
       varying vec3 vDir;
       void main() {
@@ -37,14 +40,17 @@ export function createSky(scene) {
         gl_Position = p.xyww;
       }`,
     fragmentShader: `
-      uniform vec3 uTop, uHorizon, uBelow, uSunDir;
+      uniform vec3 uTop, uHorizon, uBelow, uSunDir, uGlow;
+      uniform float uGlowSize;
       varying vec3 vDir;
       void main() {
-        float h = vDir.y;
+        vec3 d = normalize(vDir);
+        float h = d.y;
         vec3 col = mix(uHorizon, uTop, smoothstep(0.0, 0.55, h));
         col = mix(col, uBelow, smoothstep(0.0, -0.2, h));
-        float sun = max(dot(normalize(vDir), uSunDir), 0.0);
-        col += vec3(1.0, 0.93, 0.78) * (pow(sun, 900.0) * 1.6 + pow(sun, 10.0) * 0.12);
+        float sun = max(dot(d, uSunDir), 0.0);
+        // a wide haze round the sun, strongest low in the sky
+        col += uGlow * (pow(sun, uGlowSize) * 0.35 + pow(sun, 120.0) * 0.25) * (1.0 - smoothstep(0.0, 0.6, h) * 0.6);
         gl_FragColor = vec4(col, 1.0);
         #include <colorspace_fragment>
       }`,
@@ -54,6 +60,8 @@ export function createSky(scene) {
   sky.frustumCulled = false;
   scene.add(sky);
   return {
+    uniforms,
+    fog: scene.fog,
     update(camera) {
       sky.position.copy(camera.position);
     },
@@ -63,6 +71,7 @@ export function createSky(scene) {
 export function createLights(scene, { shadowSize = 2048 } = {}) {
   const hemi = new HemisphereLight('#dceaff', '#c9b28a', 1.15);
   scene.add(hemi);
+  // the sun by day, the moon by night: one light, so one shadow map
   const sun = new DirectionalLight('#fff0d8', 2.6);
   sun.castShadow = true;
   sun.shadow.mapSize.set(shadowSize, shadowSize);
@@ -72,13 +81,18 @@ export function createLights(scene, { shadowSize = 2048 } = {}) {
   cam.top = 55;
   cam.bottom = -55;
   cam.near = 1;
-  cam.far = 320;
+  cam.far = 340;
   sun.shadow.bias = -0.0004;
   sun.shadow.normalBias = 0.04;
   scene.add(sun, sun.target);
   const offset = new Vector3(-70, 110, 80);
   return {
     sun,
+    hemi,
+    // where the light comes from (unit vector towards it)
+    setDirection(dir) {
+      offset.copy(dir).multiplyScalar(160);
+    },
     // Keep the shadow box centred on whatever the camera is looking at.
     follow(focus) {
       sun.target.position.copy(focus);
@@ -413,6 +427,7 @@ export function createClouds(scene) {
     scene.add(mesh);
   }
   return {
+    material,
     update(dt) {
       for (const c of clouds) {
         c.mesh.position.x += c.speed * dt;

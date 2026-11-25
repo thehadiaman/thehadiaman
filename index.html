@@ -40,6 +40,11 @@
     <a class="hud__cta" href="mailto:hadiaman.official@gmail.com">Email me</a>
     <a href="assets/hadi-aman-cv.pdf">CV <span>PDF</span></a>
     <a href="cv.html">Plain page</a>
+    <button type="button" class="hud__time" data-time title="Day or night (T)">
+      <svg class="hud__sun" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="3.6"/><path d="M10 1.8v2.6M10 15.6v2.6M1.8 10h2.6M15.6 10h2.6M4.2 4.2l1.8 1.8M14 14l1.8 1.8M4.2 15.8 6 14M14 6l1.8-1.8"/></svg>
+      <svg class="hud__moon" viewBox="0 0 20 20" aria-hidden="true"><path d="M15.6 12.6A6.6 6.6 0 0 1 7.4 4.4a6.6 6.6 0 1 0 8.2 8.2Z"/></svg>
+      <span data-time-text>09:30</span><span class="sr-only" data-time-label>, switch to night</span>
+    </button>
     <button type="button" class="hud__help" data-help aria-expanded="false" aria-controls="help">?<span class="sr-only"> Controls</span></button>
   </nav>
 </header>
@@ -50,12 +55,15 @@
     <div><dt><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrows</dt><dd>walk</dd></div>
     <div><dt><kbd>Shift</kbd></dt><dd>run</dd></div>
     <div><dt>Click or tap the ground</dt><dd>walk there</dd></div>
-    <div><dt>Drag</dt><dd>look around</dd></div>
+    <div><dt>Drag</dt><dd>look around (drag up to look at the sky)</dd></div>
     <div><dt>Wheel or pinch</dt><dd>zoom</dd></div>
-    <div><dt><kbd>E</kbd></dt><dd>use (sit, board the plane)</dd></div>
+    <div><dt><kbd>E</kbd></dt><dd>use (sit on a bench, drive, board the plane)</dd></div>
     <div><dt><kbd>N</kbd></dt><dd>walk to the next stop</dd></div>
     <div><dt><kbd>Space</kbd></dt><dd>jump</dd></div>
+    <div><dt><kbd>T</kbd> or the clock</dt><dd>day or night</dd></div>
   </dl>
+  <p><strong>Cars and taxis.</strong> Walk up to the car outside home (or at Dubai arrivals) and press <kbd>E</kbd> to drive. At a taxi stand, or next to any taxi in Dubai, press <kbd>E</kbd> and pick where to go.</p>
+  <p><strong>The plane.</strong> It flies itself. Press an arrow key to take the controls, land gently on either runway, or hand back to autopilot. Fly into trouble and help arrives.</p>
   <p>Or just press <strong>Next</strong> on each card and I’ll walk you through it.</p>
   <p class="help__small">Prefer reading? <a href="cv.html">The same CV as a plain page.</a></p>
   <p class="help__small">3D models by <a href="https://kenney.nl" target="_blank" rel="noopener">Kenney</a> (CC0). Built with Three.js.</p>
@@ -69,10 +77,39 @@
   <ol data-chapters></ol>
 </nav>
 
-<div class="flight" data-flight hidden>
-  <p><strong>CCJ → DXB</strong> Kozhikode to Dubai · 5 December 2026</p>
-  <button type="button">Skip</button>
-</div>
+<section class="flight" data-flight hidden aria-label="Flight">
+  <div class="flight__status">
+    <span class="flight__mode" data-fmode>Autopilot</span>
+    <span class="flight__route" data-froute></span>
+    <span class="flight__num"><b data-falt>0</b> m</span>
+    <span class="flight__num"><b data-fspd>0</b> km/h</span>
+  </div>
+  <p class="flight__banner" data-fbanner hidden></p>
+  <div class="flight__actions">
+    <button type="button" data-fly="control">Take the controls</button>
+    <button type="button" data-fly="auto-dubai">Autopilot to Dubai</button>
+    <button type="button" data-fly="auto-kerala">Autopilot to Kozhikode</button>
+    <button type="button" data-fly="skip">Skip to arrival</button>
+    <button type="button" class="flight__hold" data-hold="run">Faster</button>
+    <button type="button" class="flight__hold" data-hold="brake">Slower</button>
+  </div>
+  <p class="flight__help" data-fhelp></p>
+</section>
+
+<section class="drive" data-drive hidden aria-label="Driving">
+  <span class="drive__what" data-dwhat>Driving</span>
+  <span class="flight__num" data-dspeed-wrap><b data-dspeed>0</b> km/h</span>
+  <button type="button" data-exit><kbd>E</kbd> Get out</button>
+  <p class="drive__help" data-dhelp>↑ go · ↓ brake, reverse · ← → steer · Shift faster · Space handbrake</p>
+</section>
+
+<section class="picker" data-picker hidden aria-label="Choose a destination">
+  <h2 data-ptitle>Where to?</h2>
+  <ul data-plist></ul>
+  <button type="button" class="picker__cancel" data-pcancel>Cancel</button>
+</section>
+
+<div class="stick" data-stick hidden aria-hidden="true"><span></span></div>
 
 <div class="toast" data-toast role="status"></div>
 <div class="fade" data-fade></div>

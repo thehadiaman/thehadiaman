@@ -13,6 +13,7 @@ export const MODELS = {
   recruiter: 'characters/character-female-b.glb',
   worker: 'characters/character-worker.glb',
   luggage: 'characters/item-luggage-upright.glb',
+  robot: 'characters/character-robot.glb',
 
   houseA: 'suburban/building-type-c.glb',
   houseB: 'suburban/building-type-h.glb',

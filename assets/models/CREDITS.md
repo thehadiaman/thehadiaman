@@ -14,10 +14,11 @@ but credit is given here anyway.
 | boats/ | Watercraft Kit |
 | furniture/ | Furniture Kit |
 
-Changes made for this site: the three character files had unused animation
-clips removed to save space (the NPCs borrow the avatar's clips), and the
-suburban houses' green roofs are recoloured to terracotta at load time.
+Changes made for this site: the character files (including the robot,
+character-robot.glb, used as the rescue flyer) had unused animation clips
+removed to save space (the NPCs borrow the avatar's clips), and the suburban
+houses' green roofs are recoloured to terracotta at load time.
 
 Everything else in the world (terrain, sea, sky, airport terminals, control
-tower, the plane, the Sabre mast, the Redis cabinet, the Dubai supertall and
-the split-flap boards) is built from primitives in assets/js/world/.
+tower, the plane, the Sabre mast, the Redis cabinet, the Dubai supertall, the
+rescuer's jetpack and the split-flap boards) is built from primitives in assets/js/world/.

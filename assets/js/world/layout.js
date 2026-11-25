@@ -74,3 +74,18 @@ export const PLACES = {
   redis: { x: 9, z: -68 },
   arrivals: { x0: -22, x1: 22, z0: -372, z1: -360 },
 };
+
+// Cars you can drive, and taxi stands. h is the heading: facing (sin h, cos h).
+export const VEHICLES = {
+  carKerala: { x: 1, z: 113, h: Math.PI },
+  taxiKerala: { x: 16, z: 111, h: Math.PI },
+  carDubai: { x: -24, z: -383, h: Math.PI / 2 },
+  taxiDubai: { x: 20, z: -389, h: -Math.PI / 2 },
+};
+
+// Where a taxi can take you in Dubai (the Kerala taxi goes to the stops).
+export const DUBAI_PLACES = [
+  { name: 'Arrivals', x: 0, z: -386 },
+  { name: 'Downtown, by the tower', x: 8, z: -428 },
+  { name: 'The plane', x: -28, z: -355, plane: true },
+];

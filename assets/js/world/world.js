@@ -32,7 +32,7 @@ export class World {
     this.hash = new Map();
     this.dynamic = []; // moving obstacles: { hits(x, z, r) }
     this.updaters = [];
-    this.refs = {};
+    this.refs = { streetLamps: [], benches: [] };
   }
 
   index(item, x0, x1, z0, z1) {
@@ -73,10 +73,10 @@ export class World {
   // Is a body of radius r (≤ 2) blocked at (x, z)? The path planner passes
   // forNav, which ignores traffic (cars move; the planner shouldn't route around
   // where a car happened to be).
-  blocked(x, z, r = 0.35, forNav = false) {
+  blocked(x, z, r = 0.35, forNav = false, ignore = null) {
     if (!this.land.walkable(x, z)) return true;
     if (this.staticHit(x, z, r)) return true;
-    for (const d of this.dynamic) if ((!forNav || d.nav) && d.hits(x, z, r)) return true;
+    for (const d of this.dynamic) if (d !== ignore && (!forNav || d.nav) && d.hits(x, z, r)) return true;
     return false;
   }
 

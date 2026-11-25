@@ -131,6 +131,27 @@ kbd {
 .hud__links .hud__cta { background: var(--marigold); }
 .hud__links .hud__cta:hover { background: var(--marigold-dark); }
 .hud__help { width: 34px; justify-content: center; padding: 0; border: 1.5px solid var(--ink); }
+.hud__time {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--ink);
+  font: 600 1rem/1 var(--cond);
+  letter-spacing: 0.03em;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.hud__time:hover { background: rgba(22, 24, 29, 0.07); }
+.hud__time svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; }
+.hud__time .hud__sun circle { fill: var(--marigold); stroke: var(--ink); }
+.hud__time .hud__moon { fill: #c9d3ea; stroke: var(--ink); stroke-width: 1.4; }
+.hud__time .hud__moon, .hud__time.is-night .hud__sun { display: none; }
+.hud__time.is-night .hud__moon { display: block; }
 
 .help {
   position: fixed;
@@ -323,25 +344,133 @@ kbd {
 
 /* ------------------------------------------------ flight, toast, fade, loader */
 
+/* flight panel: bottom centre, where the chapter bar sits when walking */
 .flight {
   position: fixed;
-  top: 84px;
   left: 50%;
+  bottom: max(12px, env(safe-area-inset-bottom));
   z-index: 11;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 8px 8px 8px 16px;
-  border-radius: 6px;
+  width: min(560px, calc(100vw - 24px));
+  padding: 10px 12px 10px;
+  border-radius: 8px;
   background: rgba(31, 34, 38, 0.94);
   color: #f4f0e6;
   transform: translateX(-50%);
-  white-space: nowrap;
+  box-shadow: 0 12px 30px -14px rgba(0, 0, 0, 0.7);
 }
 .flight[hidden] { display: none; }
-.flight strong { margin-right: 6px; color: var(--marigold); font: 600 1.1rem/1 var(--cond); letter-spacing: 0.06em; }
-.flight button { padding: 6px 12px; border: 1px solid #6b6e75; border-radius: 4px; background: none; color: #fff; font-weight: 600; cursor: pointer; }
-.is-flying .card, .is-flying .chapters, .is-flying .prompt { display: none; }
+.flight__status { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.flight__mode {
+  padding: 3px 7px;
+  border-radius: 3px;
+  background: var(--cobalt);
+  font: 700 0.72rem/1.2 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.flight__mode[data-mode="manual"] { background: var(--marigold); color: var(--ink); }
+.flight__mode[data-mode="rescue"] { background: #d23b2e; }
+.flight__route { flex: 1; color: #bdb6a7; font-size: 0.9rem; }
+.flight__num { color: #bdb6a7; font: 400 0.8rem/1 var(--mono); }
+.flight__num b { color: #fff; font: 600 1.15rem/1 var(--cond); letter-spacing: 0.02em; }
+.flight__banner { margin-top: 8px; color: var(--marigold); font: 600 1.15rem/1.2 var(--cond); letter-spacing: 0.03em; }
+.flight__banner[hidden] { display: none; }
+.flight__actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+.flight__actions button, .drive button {
+  padding: 7px 11px;
+  border: 1px solid #5b5f66;
+  border-radius: 4px;
+  background: none;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.86rem;
+  cursor: pointer;
+  touch-action: none;
+}
+.flight__actions button:hover:not(:disabled), .drive button:hover { border-color: #fff; }
+.flight__actions button:disabled { opacity: 0.45; cursor: default; }
+.flight__actions button[hidden] { display: none; }
+.flight__actions [data-fly="control"], .flight__actions [data-fly^="auto"] { border-color: var(--marigold); }
+.flight__help { margin-top: 7px; color: #9d988d; font-size: 0.78rem; }
+.flight__help:empty { display: none; }
+.flight__hold { display: none; }
+.is-touch .flight__hold:not([hidden]) { display: inline-block; }
+
+/* driving panel */
+.drive {
+  position: fixed;
+  left: 50%;
+  bottom: 70px;
+  z-index: 9;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 14px;
+  max-width: calc(100vw - 24px);
+  padding: 8px 10px 8px 14px;
+  border-radius: 8px;
+  background: rgba(31, 34, 38, 0.94);
+  color: #f4f0e6;
+  transform: translateX(-50%);
+}
+.drive[hidden] { display: none; }
+.drive__what { font: 600 1.05rem/1 var(--cond); letter-spacing: 0.05em; text-transform: uppercase; }
+.drive kbd { margin-right: 4px; color: var(--ink); }
+.drive__help { flex-basis: 100%; color: #9d988d; font-size: 0.78rem; text-align: center; }
+.drive__help[hidden] { display: none; }
+.is-driving .prompt { display: none; }
+
+/* destination picker */
+.picker {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 25;
+  width: min(340px, calc(100vw - 28px));
+  max-height: calc(100vh - 140px);
+  overflow: auto;
+  padding: 18px;
+  border-radius: 8px;
+  background: var(--paper);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 20px 50px -18px rgba(0, 0, 0, 0.6);
+}
+.picker[hidden] { display: none; }
+.picker h2 { font: 600 1.4rem/1 var(--cond); letter-spacing: 0.03em; text-transform: uppercase; }
+.picker ul { display: grid; gap: 6px; margin-top: 12px; padding: 0; list-style: none; }
+.picker li button {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  background: #fff;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.picker li button:hover, .picker li button:focus-visible { border-color: var(--cobalt); color: var(--cobalt); }
+.picker__cancel { margin-top: 10px; border: 0; background: none; color: var(--ink-soft); font-weight: 600; cursor: pointer; }
+
+/* thumb stick (phones, while driving or flying) */
+.stick {
+  position: fixed;
+  left: max(18px, env(safe-area-inset-left));
+  bottom: 150px;
+  z-index: 12;
+  display: grid;
+  place-items: center;
+  width: 120px;
+  height: 120px;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  background: rgba(31, 34, 38, 0.35);
+  touch-action: none;
+}
+.stick[hidden] { display: none; }
+.stick span { width: 48px; height: 48px; border-radius: 50%; background: rgba(255, 255, 255, 0.85); pointer-events: none; }
+
+.is-flying .card, .is-flying .chapters, .is-flying .prompt, .is-flying .labels { display: none; }
 
 .toast {
   position: fixed;
@@ -401,6 +530,8 @@ kbd {
   .hud__id strong { font-size: 1.15rem; }
   .hud__links a:not(.hud__cta):not([href$='.pdf']) { display: none; }
   .hud__links a span { display: none; }
+  .hud__time { padding: 0 8px; }
+  .hud__time [data-time-text] { display: none; }
   .card {
     top: auto;
     left: 10px;
@@ -414,5 +545,7 @@ kbd {
   .chapters { left: 10px; right: 10px; max-width: none; transform: none; bottom: max(8px, env(safe-area-inset-bottom)); }
   .chapters button { height: 32px; padding: 0 9px; font-size: 0.85rem; }
   .prompt { bottom: calc(44vh + 76px); }
-  .flight { top: 64px; }
+  .flight { bottom: max(8px, env(safe-area-inset-bottom)); }
+  .flight__help { display: none; }
+  .drive { bottom: 60px; }
 }

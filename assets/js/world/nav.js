@@ -4,9 +4,8 @@
 import { KERALA, DUBAI } from './layout.js';
 import { roadClearance } from './roads.js';
 
-const ROAD_COST = 0.55;
-const GRASS_COST = 1;
-const CAR_ROAD_COST = 1.6;
+// Default costs are for walking: footpaths cheap, the taxis' road avoided.
+const WALKING = { foot: 0.55, car: 1.6, grass: 1 };
 
 function bounds(points, pad) {
   const xs = points.map((p) => p[0]);
@@ -77,8 +76,10 @@ class Heap {
 }
 
 export class NavGrid {
-  constructor(world, { x0 = -100, x1 = 100, z0 = -530, z1 = 128, cell = 1, radius = 0.45 } = {}) {
+  constructor(world, { x0 = -100, x1 = 100, z0 = -530, z1 = 128, cell = 1, radius = 0.45, costs = WALKING } = {}) {
     this.world = world;
+    this.costs = costs;
+    this.minCost = Math.min(costs.foot, costs.car, costs.grass);
     this.x0 = x0;
     this.z0 = z0;
     this.cell = cell;
@@ -112,7 +113,7 @@ export class NavGrid {
           // footpaths are cheap; the taxis' ring road is crossed, not walked along
           const foot = roadClearance(x, z, { reach: 1, which: 'foot' }) < -0.4;
           const carRoad = !foot && roadClearance(x, z, { reach: 1, which: 'car' }) < 0;
-          c = foot ? ROAD_COST : carRoad ? CAR_ROAD_COST : GRASS_COST;
+          c = foot ? this.costs.foot : carRoad ? this.costs.car : this.costs.grass;
         }
         this.cost[iz * this.w + ix] = c;
       }
@@ -176,7 +177,7 @@ export class NavGrid {
     let start = this.indexOf(sx, sz);
     if (!this.open(start)) start = this.nearestOpen(sx, sz, 4);
     // the exact spot must fit a person, not just its grid cell
-    const goalOpen = this.open(this.indexOf(tx, tz)) && !this.world.blocked(tx, tz, 0.4, true);
+    const goalOpen = this.open(this.indexOf(tx, tz)) && !this.world.blocked(tx, tz, this.radius - 0.05, true);
     const goal = goalOpen ? this.indexOf(tx, tz) : this.nearestOpen(tx, tz);
     if (start < 0 || goal < 0) return null;
     if (start === goal) return { points: [[goalOpen ? tx : this.centre(goal)[0], goalOpen ? tz : this.centre(goal)[1]]], end: goalOpen ? [tx, tz] : this.centre(goal) };
@@ -188,7 +189,7 @@ export class NavGrid {
     const h = (i) => {
       const dx = Math.abs((i % w) - gx);
       const dz = Math.abs(Math.floor(i / w) - gz);
-      return ROAD_COST * (Math.max(dx, dz) + (Math.SQRT2 - 1) * Math.min(dx, dz));
+      return this.minCost * (Math.max(dx, dz) + (Math.SQRT2 - 1) * Math.min(dx, dz));
     };
     heap.clear();
     g[start] = 0;
@@ -264,7 +265,7 @@ export class NavGrid {
       const x = ax + (bx - ax) * t;
       const z = az + (bz - az) * t;
       const i = this.indexOf(x, z);
-      if (!this.open(i) || this.world.blocked(x, z, 0.42, true)) return Infinity;
+      if (!this.open(i) || this.world.blocked(x, z, this.radius - 0.03, true)) return Infinity;
       total += this.cost[i];
     }
     return (total / steps) * len;
